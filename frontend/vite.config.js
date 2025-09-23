@@ -2,19 +2,16 @@
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import basicSsl from '@vitejs/plugin-basic-ssl'; // 1. Import the SSL plugin
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    reactRouter(),
-    basicSsl() // 2. Add the plugin here
+    reactRouter()
   ],
   server: {
-    https: true, // 3. Enable HTTPS
-    host: true,  // 4. Expose to the network
+    host: true,  // Expose to the network
     
-    // Your existing middleware configuration remains the same
+    // Your existing middleware configuration
     middlewareMode: false,
     configure: (server) => {
       server.middlewares.use((req, res, next) => {

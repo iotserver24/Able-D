@@ -1,8 +1,7 @@
 // app/teacher/dashboard/UploadContent.jsx
 import React, { useMemo, useRef, useState } from "react";
 
-// NOTE: The inlined styles are no longer needed here as they are managed by TeacherDashboard.jsx
-// However, the button-specific styles are still required.
+// Inlined CSS with the text-align fix
 const inlinedStyles = `
   /* --- Original Button & Element Styles --- */
   @property --angle-1 { syntax: "<angle>"; inherits: false; initial-value: -75deg; }
@@ -14,7 +13,7 @@ const inlinedStyles = `
   .button-wrap button { --border-width: clamp(1px, 0.0625em, 4px); all: unset; cursor: pointer; position: relative; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); pointer-events: auto; z-index: 3; background: linear-gradient(-75deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)); border-radius: 999vw; box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.25em 0.125em -0.125em rgba(0, 0, 0, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0 0 0 rgba(255, 255, 255, 1); backdrop-filter: blur(clamp(1px, 0.125em, 4px)); -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px)); transition: all var(--anim--hover-time) var(--anim--hover-ease); width: 100%; background-color: rgba(236, 232, 241, 0.4); }
   .dark .button-wrap button { background-color: transparent; }
   .button-wrap button:hover { transform: scale(0.975); backdrop-filter: blur(0.01em); -webkit-backdrop-filter: blur(0.01em); box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.25), 0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5), 0 0 0 0 rgba(255, 255, 255, 1); }
-  .button-wrap button span { position: relative; display: block; user-select: none; -webkit-user-select: none; font-family: inherit; letter-spacing: -0.05em; font-weight: 600; font-size: 1em; color: rgba(50, 50, 50, 1); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-shadow: 0em 0.25em 0.05em rgba(0, 0, 0, 0.1); transition: all var(--anim--hover-time) var(--anim--hover-ease); padding-inline: 1.5em; padding-block: 0.875em; }
+  .button-wrap button span { text-align: center; /* THIS IS THE FIX */ position: relative; display: block; user-select: none; -webkit-user-select: none; font-family: inherit; letter-spacing: -0.05em; font-weight: 600; font-size: 1em; color: rgba(50, 50, 50, 1); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-shadow: 0em 0.25em 0.05em rgba(0, 0, 0, 0.1); transition: all var(--anim--hover-time) var(--anim--hover-ease); padding-inline: 1.5em; padding-block: 0.875em; }
   .dark .button-wrap button span { color: rgba(230, 230, 240, 1); text-shadow: 0em 0.25em 0.05em rgba(0, 0, 0, 0.4); }
   .button-wrap button:hover span { text-shadow: 0.025em 0.025em 0.025em rgba(0, 0, 0, 0.12); }
   .button-wrap button span::after { content: ""; display: block; position: absolute; z-index: 1; width: calc(100% - var(--border-width)); height: calc(100% - var(--border-width)); top: calc(0% + var(--border-width) / 2); left: calc(0% + var(--border-width) / 2); box-sizing: border-box; border-radius: 999vw; overflow: clip; background: linear-gradient(var(--angle-2), rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 40% 50%, rgba(255, 255, 255, 0) 55%); z-index: 3; mix-blend-mode: screen; pointer-events: none; background-size: 200% 200%; background-position: 0% 50%; background-repeat: no-repeat; transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease), --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease); }
@@ -305,9 +304,9 @@ export default function UploadContent({ darkMode }) {
                 </div>
               </div>
             )}
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-6">
-              <div className="button-wrap flex-1 w-full">
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+              <div className="button-wrap w-full sm:w-auto">
                 <div className="button-shadow"></div>
                 <button type="submit" disabled={isSubmitting}>
                   <span>

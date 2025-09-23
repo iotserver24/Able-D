@@ -5,11 +5,11 @@ import UploadContent from './UploadContent';
 import ReviewContent from './ReviewContent';
 import ProfileContent from './ProfileContent';
 
-// Inlined CSS for the liquid glass button and NEW burger menu
+// Inlined CSS for the liquid glass buttons
 const componentStylesCSS = `
   /* --- Reactive Background Styles --- */
   .reactive-background {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -53,24 +53,13 @@ const componentStylesCSS = `
   .button-wrap:has(button:active) .button-shadow { filter: blur(clamp(2px, 0.125em, 12px)); -webkit-filter: blur(clamp(2px, 0.125em, 12px)); }
   .button-wrap:has(button:active) .button-shadow::after { top: calc(var(--shadow-cuttoff-fix) - 0.5em); opacity: 0.75; }
   .button-wrap:has(button:active) span { text-shadow: 0.025em 0.25em 0.05em rgba(0, 0, 0, 0.12); }
-  
-  /* --- NEW Burger Menu Styles --- */
-  .burger { position: relative; width: 40px; height: 30px; background: transparent; cursor: pointer; display: block; }
-  .burger input { display: none; }
-  .burger span { display: block; position: absolute; height: 4px; width: 100%; background: black; border-radius: 9px; opacity: 1; left: 0; transform: rotate(0deg); transition: .25s ease-in-out; }
-  .dark .burger span { background: white; }
-  .burger span:nth-of-type(1) { top: 0px; transform-origin: left center; }
-  .burger span:nth-of-type(2) { top: 50%; transform: translateY(-50%); transform-origin: left center; }
-  .burger span:nth-of-type(3) { top: 100%; transform-origin: left center; transform: translateY(-100%); }
-  .burger input:checked ~ span:nth-of-type(1) { transform: rotate(45deg); top: 0px; left: 5px; }
-  .burger input:checked ~ span:nth-of-type(2) { width: 0%; opacity: 0; }
-  .burger input:checked ~ span:nth-of-type(3) { transform: rotate(-45deg); top: 28px; left: 5px; }
 `;
 
 // Icons for the main menu buttons
 const UploadIcon = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>;
 const ReviewIcon = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
 const ProfileIcon = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
+const MenuIcon = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>;
 
 const MainMenu = ({ setActiveView, darkMode }) => (
   <div className="max-w-4xl mx-auto text-center">
@@ -121,7 +110,6 @@ export default function TeacherDashboard() {
   const reactiveBgRef = useRef(null);
 
   useEffect(() => {
-    // Hide sidebar by default on mobile
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -156,38 +144,50 @@ export default function TeacherDashboard() {
   return (
     <>
       <style>{componentStylesCSS}</style>
-      <div className={`relative min-h-screen transition-all duration-500 ${darkMode ? 'dark' : 'light'} ${
-          darkMode
-            ? "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
-            : "bg-gradient-to-br from-indigo-50 via-purple-50 to-fuchsia-50"
-        }`}>
-          <div ref={reactiveBgRef} className="reactive-background"></div>
-          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-            <div className={`absolute -top-20 -right-20 w-96 h-96 rounded-full opacity-30 animate-pulse ${
-              darkMode ? "bg-purple-500/50" : "bg-purple-300"
-            }`}></div>
-            <div className={`absolute -bottom-20 -left-20 w-96 h-96 rounded-full opacity-30 animate-pulse delay-1000 ${
-              darkMode ? "bg-indigo-500/50" : "bg-indigo-300"
-            }`}></div>
+      <div className={`transition-all duration-500 ${darkMode ? 'dark' : 'light'}`}>
+          <div className={`fixed inset-0 z-[-1] transition-all duration-500 ${
+            darkMode
+              ? "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+              : "bg-gradient-to-br from-indigo-50 via-purple-50 to-fuchsia-50"
+          }`}>
+            <div ref={reactiveBgRef} className="reactive-background"></div>
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className={`absolute -top-20 -right-20 w-96 h-96 rounded-full opacity-30 animate-pulse ${
+                darkMode ? "bg-purple-500/50" : "bg-purple-300"
+              }`}></div>
+              <div className={`absolute -bottom-20 -left-20 w-96 h-96 rounded-full opacity-30 animate-pulse delay-1000 ${
+                darkMode ? "bg-indigo-500/50" : "bg-indigo-300"
+              }`}></div>
+            </div>
           </div>
           
-          <label className="burger fixed top-5 left-5 z-50">
-            <input type="checkbox" checked={isSidebarOpen} onChange={() => setIsSidebarOpen(!isSidebarOpen)} />
-            <span></span>
-            <span></span>
-            <span></span>
-          </label>
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className={`fixed top-5 left-5 z-30 p-2 rounded-full transition-all ${
+                darkMode ? 'text-white bg-black/20 hover:bg-black/40' : 'text-gray-800 bg-white/50 hover:bg-white/80'
+              }`}
+              aria-label="Open sidebar"
+            >
+              <MenuIcon />
+            </button>
+          )}
 
           <Sidebar 
             isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
             setActiveView={setActiveView} 
             darkMode={darkMode} 
             setDarkMode={setDarkMode} 
           />
 
-          <main className={`relative z-10 p-6 md:p-12 h-screen overflow-y-auto flex items-center justify-center transition-all duration-300 ease-in-out ${
-              isSidebarOpen ? 'md:pl-72' : 'md:pl-20'
-          }`}>
+          <main className={`relative z-10 w-full min-h-screen flex transition-all duration-300 ease-in-out p-6 md:p-12 ${
+              isSidebarOpen ? 'md:ml-64' : 'md:ml-0'
+            } ${
+              activeView === 'menu' 
+                ? 'items-center justify-center' 
+                : 'items-start justify-center pt-24'
+            }`}>
               {renderContent()}
           </main>
       </div>
