@@ -53,6 +53,7 @@ Indexes created on `notes`:
 ```
 - 400 Bad Request on validation or processing error
 - 403 Forbidden if non-teacher
+- 500 Internal Server Error on database insertion failure (returns `{ "error": "Database error: ..." }`)
 
 ## Examples
 

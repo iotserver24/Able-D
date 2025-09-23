@@ -51,12 +51,9 @@ def save_note(
     if extra_meta:
         doc["meta"] = extra_meta
 
-    try:
-        res = _notes().insert_one(doc)
-        doc["_id"] = str(res.inserted_id)
-    except Exception:
-        # allow operation to succeed even if DB unavailable, but mark as ephemeral
-        doc["_id"] = None
+    # Persist to MongoDB; if insertion fails, propagate the exception so callers can return an error
+    res = _notes().insert_one(doc)
+    doc["_id"] = str(res.inserted_id)
     return doc
 
 

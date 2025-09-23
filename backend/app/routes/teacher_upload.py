@@ -71,17 +71,20 @@ def teacher_upload():
             text = result
             source_type = "audio"
 
-    note = save_note(
-        school=school,
-        class_name=class_name,
-        subject=subject,
-        topic=topic,
-        text=text,
-        uploaded_by=identity.get("email") or identity.get("id"),
-        source_type=source_type,
-        original_filename=original_filename,
-        extra_meta={"language": request.form.get("language")} if source_type == "audio" else None,
-    )
+    try:
+        note = save_note(
+            school=school,
+            class_name=class_name,
+            subject=subject,
+            topic=topic,
+            text=text,
+            uploaded_by=identity.get("email") or identity.get("id"),
+            source_type=source_type,
+            original_filename=original_filename,
+            extra_meta={"language": request.form.get("language")} if source_type == "audio" else None,
+        )
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
     return jsonify({"note": note}), 201
 
