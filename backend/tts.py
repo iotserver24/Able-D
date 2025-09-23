@@ -54,11 +54,14 @@ class MicrosoftTTS:
     
     # Optimal settings for educational content
     EDUCATION_SETTINGS = {
-        "rate": "0.95",  # Slightly slower for clarity
+        "rate": "1.0",  # Normal speed for better performance
         "pitch": "default",
         "volume": "default",
-        "style": "narration-professional"  # Professional narration style
+        "style": "newscast-casual"  # More efficient style that still sounds professional
     }
+    
+    # Chunk size for long texts (in characters)
+    MAX_CHUNK_SIZE = 3000
     
     def __init__(self, api_key: Optional[str] = None, region: Optional[str] = None):
         """
@@ -98,17 +101,33 @@ class MicrosoftTTS:
             )
             self._speech_config.speech_synthesis_voice_name = self.EDUCATION_VOICE
             
-            # Set high quality output format
+            # Use more efficient output format for better performance
             self._speech_config.set_speech_synthesis_output_format(
-                speechsdk.SpeechSynthesisOutputFormat.Audio48Khz192KBitRateMonoMp3
+                speechsdk.SpeechSynthesisOutputFormat.Audio24Khz96KBitRateMonoMp3
             )
             
-            # Optimize for low latency
+            # Increase timeouts to handle longer texts
             self._speech_config.set_property(
-                speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "3000"
+                speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "10000"
             )
             self._speech_config.set_property(
-                speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500"
+                speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "2000"
+            )
+            
+            # Set additional properties for better performance
+            # Note: Some properties may not be available in all SDK versions
+            try:
+                # Try to set synthesis timeout if available
+                self._speech_config.set_property(
+                    speechsdk.PropertyId.SpeechServiceConnection_ConnectionTimeoutMs, "30000"
+                )
+            except AttributeError:
+                # Property not available in this SDK version
+                pass
+            
+            # Set RTF threshold using string property
+            self._speech_config.set_property_by_name(
+                "SPEECH-SynthesisRtfThreshold", "5.0"  # Increase RTF threshold
             )
         return self._speech_config
     
@@ -120,7 +139,7 @@ class MicrosoftTTS:
             self._synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
         return self._synthesizer
     
-    def _build_ssml(self, text: str) -> str:
+    def _build_ssml(self, text: str, use_simple_mode: bool = False) -> str:
         """Build SSML optimized for educational content."""
         # Escape XML special characters
         text = text.replace('&', '&amp;')
@@ -129,19 +148,49 @@ class MicrosoftTTS:
         text = text.replace('"', '&quot;')
         text = text.replace("'", '&apos;')
         
-        # Build SSML with educational settings
-        ssml = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
-                   xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
-            <voice name="{self.EDUCATION_VOICE}">
-                <mstts:express-as style="{self.EDUCATION_SETTINGS['style']}">
-                    <prosody rate="{self.EDUCATION_SETTINGS['rate']}">
-                        {text}
-                    </prosody>
-                </mstts:express-as>
-            </voice>
-        </speak>'''
+        if use_simple_mode:
+            # Simple SSML for better performance with long texts
+            ssml = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+                <voice name="{self.EDUCATION_VOICE}">
+                    {text}
+                </voice>
+            </speak>'''
+        else:
+            # Build SSML with educational settings
+            ssml = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
+                       xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+                <voice name="{self.EDUCATION_VOICE}">
+                    <mstts:express-as style="{self.EDUCATION_SETTINGS['style']}">
+                        <prosody rate="{self.EDUCATION_SETTINGS['rate']}">
+                            {text}
+                        </prosody>
+                    </mstts:express-as>
+                </voice>
+            </speak>'''
         
         return ssml
+    
+    def _split_text_into_chunks(self, text: str) -> list[str]:
+        """Split long text into manageable chunks."""
+        if len(text) <= self.MAX_CHUNK_SIZE:
+            return [text]
+        
+        chunks = []
+        sentences = text.replace('! ', '!|').replace('? ', '?|').replace('. ', '.|').split('|')
+        
+        current_chunk = ""
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) <= self.MAX_CHUNK_SIZE:
+                current_chunk += sentence + " "
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = sentence + " "
+        
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+        
+        return chunks
     
     async def text_to_speech_async(
         self,
@@ -161,7 +210,8 @@ class MicrosoftTTS:
         self,
         text: str,
         output_file: Optional[str] = None,
-        play_audio: bool = False
+        play_audio: bool = False,
+        retry_on_timeout: bool = True
     ) -> bool:
         """
         Convert text to speech optimized for educational content.
@@ -170,27 +220,143 @@ class MicrosoftTTS:
             text: Text to convert to speech
             output_file: Path to save audio file (optional)
             play_audio: Whether to play audio directly (optional)
+            retry_on_timeout: Whether to retry with simpler settings on timeout
         
         Returns:
             True if successful, False otherwise
         """
         speechsdk = _lazy_import_speech_sdk()
         
+        # Check if text needs chunking
+        text_length = len(text)
+        if text_length > self.MAX_CHUNK_SIZE:
+            logger.info(f"Text is long ({text_length} chars), processing in chunks...")
+            return self._process_long_text(text, output_file, play_audio)
+        
+        # Try synthesis with full settings first
+        success = self._synthesize_with_settings(
+            text, output_file, play_audio, use_simple_mode=False
+        )
+        
+        # If failed due to timeout and retry is enabled, try with simpler settings
+        if not success and retry_on_timeout:
+            logger.info("Retrying with simplified settings...")
+            success = self._synthesize_with_settings(
+                text, output_file, play_audio, use_simple_mode=True
+            )
+        
+        return success
+    
+    def _process_long_text(
+        self,
+        text: str,
+        output_file: Optional[str] = None,
+        play_audio: bool = False
+    ) -> bool:
+        """Process long text by splitting into chunks."""
+        speechsdk = _lazy_import_speech_sdk()
+        
+        try:
+            chunks = self._split_text_into_chunks(text)
+            logger.info(f"Split text into {len(chunks)} chunks")
+            
+            if output_file:
+                # For file output, we need to combine chunks
+                import tempfile
+                temp_files = []
+                
+                for i, chunk in enumerate(chunks):
+                    temp_file = tempfile.NamedTemporaryFile(
+                        suffix='.mp3', delete=False
+                    )
+                    temp_files.append(temp_file.name)
+                    temp_file.close()
+                    
+                    logger.info(f"Processing chunk {i+1}/{len(chunks)}...")
+                    success = self._synthesize_with_settings(
+                        chunk, temp_file.name, False, use_simple_mode=True
+                    )
+                    
+                    if not success:
+                        # Clean up temp files
+                        for tf in temp_files:
+                            try:
+                                os.unlink(tf)
+                            except:
+                                pass
+                        return False
+                
+                # Combine audio files
+                logger.info("Combining audio chunks...")
+                self._combine_audio_files(temp_files, output_file)
+                
+                # Clean up temp files
+                for tf in temp_files:
+                    try:
+                        os.unlink(tf)
+                    except:
+                        pass
+                
+                return True
+            else:
+                # For direct playback, play chunks sequentially
+                for i, chunk in enumerate(chunks):
+                    logger.info(f"Playing chunk {i+1}/{len(chunks)}...")
+                    success = self._synthesize_with_settings(
+                        chunk, None, play_audio, use_simple_mode=True
+                    )
+                    if not success:
+                        return False
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error processing long text: {e}")
+            return False
+    
+    def _combine_audio_files(self, input_files: list[str], output_file: str):
+        """Combine multiple MP3 files into one."""
+        try:
+            # Use pydub if available, otherwise use simple concatenation
+            try:
+                from pydub import AudioSegment
+                combined = AudioSegment.empty()
+                for file in input_files:
+                    audio = AudioSegment.from_mp3(file)
+                    combined += audio
+                combined.export(output_file, format="mp3")
+            except ImportError:
+                # Simple binary concatenation (works for MP3)
+                with open(output_file, 'wb') as outfile:
+                    for file in input_files:
+                        with open(file, 'rb') as infile:
+                            outfile.write(infile.read())
+            
+            logger.info(f"Combined audio saved to: {output_file}")
+        except Exception as e:
+            logger.error(f"Error combining audio files: {e}")
+            raise
+    
+    def _synthesize_with_settings(
+        self,
+        text: str,
+        output_file: Optional[str] = None,
+        play_audio: bool = False,
+        use_simple_mode: bool = False
+    ) -> bool:
+        """Core synthesis method with specific settings."""
+        speechsdk = _lazy_import_speech_sdk()
+        
         try:
             start_time = time.time()
             
-            # Build SSML for educational content
-            ssml_text = self._build_ssml(text)
+            # Build SSML
+            ssml_text = self._build_ssml(text, use_simple_mode=use_simple_mode)
             
             # Configure output
             if output_file:
-                # Fix: Ensure proper path handling with absolute paths
                 output_path = Path(output_file).resolve()
                 output_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                # Convert to absolute path string for Azure SDK
                 output_file_str = str(output_path.absolute())
-                logger.info(f"Saving audio to: {output_file_str}")
                 
                 audio_config = speechsdk.audio.AudioOutputConfig(filename=output_file_str)
                 synthesizer = speechsdk.SpeechSynthesizer(
@@ -207,37 +373,37 @@ class MicrosoftTTS:
                 )
             
             # Perform synthesis
-            logger.info("Starting speech synthesis...")
+            logger.info(f"Starting synthesis (simple_mode={use_simple_mode})...")
             result = synthesizer.speak_ssml_async(ssml_text).get()
             
             # Check result
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
                 elapsed_time = time.time() - start_time
-                logger.info(f"Speech synthesis completed in {elapsed_time:.2f} seconds")
+                logger.info(f"Synthesis completed in {elapsed_time:.2f} seconds")
                 
                 if output_file:
-                    # Verify file was created
                     if Path(output_file_str).exists():
                         file_size = Path(output_file_str).stat().st_size
-                        print(f"✓ Audio saved to: {output_file_str} ({file_size:,} bytes)")
+                        logger.info(f"Audio saved: {output_file_str} ({file_size:,} bytes)")
                     else:
                         logger.error(f"File was not created at: {output_file_str}")
                         return False
-                if play_audio:
-                    print("✓ Audio played successfully")
                 return True
             elif result.reason == speechsdk.ResultReason.Canceled:
                 cancellation_details = result.cancellation_details
-                logger.error(f"Speech synthesis canceled: {cancellation_details.reason}")
+                logger.error(f"Synthesis canceled: {cancellation_details.reason}")
                 if cancellation_details.error_details:
                     logger.error(f"Error details: {cancellation_details.error_details}")
+                    # Check if it's a timeout error
+                    if "Timeout" in str(cancellation_details.error_details):
+                        logger.info("Timeout detected")
                 return False
             else:
-                logger.error(f"Speech synthesis failed: {result.reason}")
+                logger.error(f"Synthesis failed: {result.reason}")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error during text-to-speech conversion: {e}")
+            logger.error(f"Error during synthesis: {e}")
             import traceback
             traceback.print_exc()
             return False
