@@ -34,6 +34,7 @@ def save_note(
     source_type: str,
     original_filename: Optional[str] = None,
     extra_meta: Optional[Dict] = None,
+    variants: Optional[Dict] = None,
 ) -> Dict:
     ensure_indexes()
     doc: Dict = {
@@ -50,6 +51,9 @@ def save_note(
     }
     if extra_meta:
         doc["meta"] = extra_meta
+    if variants:
+        # Store additional representations for clients: base, dyslexie, audioUrl, etc.
+        doc["variants"] = variants
 
     # Persist to MongoDB; if insertion fails, propagate the exception so callers can return an error
     res = _notes().insert_one(doc)

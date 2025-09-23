@@ -23,7 +23,11 @@ Only one of `file` or `audio` must be provided.
 ## Behavior
 - If `file` is provided: process via existing extractor (same as `/api/extract-text`)
 - If `audio` is provided: process via existing STT (same as `/api/stt`), converting to WAV PCM16 mono 16k if needed
-- Store resulting `text` with metadata in `notes` collection
+- Store resulting base `text` with metadata in `notes` collection
+- Post-processing (automatic):
+  - Generate a Dyslexie-adapted text variant using AI (`studentType = dyslexie`)
+  - Synthesize TTS (MP3) from the base text and upload to Catbox; store returned URL
+  - Save these under `variants`
 
 ## MongoDB document shape (notes)
 ```json
@@ -36,6 +40,11 @@ Only one of `file` or `audio` must be provided.
   "uploadedBy": "t1@example.com",
   "sourceType": "document",
   "originalFilename": "file.pdf",
+  "variants": {
+    "dyslexie": "...AI-adapted text for dyslexie...",
+    "audioUrl": "https://files.catbox.moe/xxxxxx.mp3",
+    "meta": { "dyslexieTips": "..." }
+  },
   "meta": { "language": "en-US" },
   "createdAt": "2025-09-23T12:34:56Z",
   "updatedAt": "2025-09-23T12:34:56Z"
@@ -84,5 +93,8 @@ curl -X POST "http://localhost:5000/api/teacher/upload" \
 - Route: `app/routes/teacher_upload.py`
 - Service: `app/services/notes_service.py`
 - Reuses: `extract_text_service.get_extractor()`, `stt_service.get_stt_client()` and `utils.audio.ensure_wav_pcm16_mono_16k`
+- AI: `app/services/ai_service.py` generates dyslexie variant
+- TTS: `app/services/tts_service.py` creates MP3
+- Catbox: `app/services/catbox_service.py` uploads MP3 and returns URL
 
 
