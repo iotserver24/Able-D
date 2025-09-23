@@ -10,8 +10,8 @@ from flask_jwt_extended import (
 
 from ..services.auth_service import (
     authenticate_teacher,
-    authenticate_student,
-    create_or_login_student,
+    authenticate_student_by_email,
+    register_student,
     register_teacher,
 )
 
@@ -19,9 +19,7 @@ from ..services.auth_service import (
 auth_bp = Blueprint("auth", __name__)
 
 
-@auth_bp.record_once
-def on_load(state):
-    JWTManager(state.app)
+# JWT Manager is initialized in the main app, not here
 
 
 @auth_bp.route("/auth/student/register", methods=["POST"])
@@ -32,6 +30,8 @@ def student_register():
     class_name = (data.get("class") or data.get("className") or None)
     subject = (data.get("subject") or None)
     school = (data.get("school") or None)
+    email = (data.get("email") or "").strip()
+    password = (data.get("password") or "")
     
     # Validation
     if not name or not name.strip():
@@ -42,9 +42,13 @@ def student_register():
         return jsonify({"error": "Subject is required"}), 400
     if not school or not school.strip():
         return jsonify({"error": "School is required"}), 400
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
     
     try:
-        user = create_or_login_student(student_type, name, class_name, subject, school)
+        user = register_student(student_type, name, class_name, subject, school, email, password)
         token = create_access_token(
             identity={
                 "role": "student",
@@ -67,16 +71,16 @@ def student_register():
 @auth_bp.route("/auth/student/login", methods=["POST"])
 def student_login():
     data = request.get_json(force=True) or {}
-    student_id = data.get("studentId") or data.get("id")
-    anonymous_id = data.get("anonymousId")
+    email = (data.get("email") or "").strip()
+    password = (data.get("password") or "")
     
-    if not student_id and not anonymous_id:
-        return jsonify({"error": "Student ID or Anonymous ID is required"}), 400
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
     
     try:
-        user = authenticate_student(student_id, anonymous_id)
+        user = authenticate_student_by_email(email, password)
         if not user:
-            return jsonify({"error": "Student not found"}), 404
+            return jsonify({"error": "Invalid email or password"}), 401
         
         token = create_access_token(
             identity={
@@ -100,8 +104,15 @@ def teacher_register():
     school = (data.get("school") or None)
     email = (data.get("email") or "").strip()
     password = (data.get("password") or "")
+    
+    # Validation
     if not name:
         return jsonify({"error": "Name is required"}), 400
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    
     try:
         user = register_teacher(name, email, password, school)
         token = create_access_token(
@@ -121,9 +132,13 @@ def teacher_login():
     data = request.get_json(force=True) or {}
     email = (data.get("email") or "").strip()
     password = (data.get("password") or "")
+    
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
     user = authenticate_teacher(email, password)
     if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid email or password"}), 401
     token = create_access_token(
         identity={
             "role": "teacher",
