@@ -1,244 +1,215 @@
 /**
  * Teacher Service
- * Handles teacher-specific API calls including file uploads and subject management
- * Updated to match backend API specification exactly
+ * Handles all teacher-related API operations
  */
 
-import { API_BASE_URL } from '../config/api.config';
-import authService from './auth.service';
+import { API_BASE_URL, API_ENDPOINTS, handleApiError } from '../config/api.config';
 
 class TeacherService {
-  constructor() {
-    this.baseURL = API_BASE_URL;
-  }
-
   /**
-   * Get authorization headers with JWT token
+   * Upload a document or audio file for a specific class and subject
+   * @param {Object} data - Upload data
+   * @param {File} data.file - Document file (PDF, DOCX, PPTX)
+   * @param {File} data.audio - Audio file (alternative to document)
+   * @param {string} data.school - School name
+   * @param {string} data.className - Class level (6-12)
+   * @param {string} data.subject - Subject name
+   * @param {string} data.topic - Topic/lesson name
+   * @param {string} data.language - Language for audio (optional, default: en-US)
+   * @returns {Promise<Object>} Upload result
    */
-  getAuthHeaders() {
-    const token = authService.token || localStorage.getItem('accessToken');
-    return {
-      ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-  }
-
-  /**
-   * Upload file (document or audio) for a specific class/subject/topic
-   * 
-   * POST /api/teacher/upload
-   * Headers: Authorization: Bearer <JWT with role=teacher>
-   * Content-Type: multipart/form-data
-   * 
-   * Fields:
-   * - school (required if not in token)
-   * - class or className (required)
-   * - subject (required)
-   * - topic or name (required)
-   * - file (document: pdf/docx/pptx) OR audio (wav/mp3/m4a)
-   * - language (optional, default en-US for audio)
-   * 
-   * @param {File} file - The file to upload
-   * @param {string} school - School name
-   * @param {string} className - Class level (6-12)
-   * @param {string} subject - Subject name
-   * @param {string} topic - Topic/name of the content
-   * @param {string} language - Language code (optional, for audio)
-   * @returns {Promise} Upload result with note data
-   */
-  async uploadFile(file, school, className, subject, topic, language = 'en-US') {
+  async uploadContent(data) {
     try {
-      const formData = new FormData();
+      const token = localStorage.getItem('accessToken');
       
-      // Add required fields
-      formData.append('school', school || 'DemoSchool');
-      formData.append('class', className); // Backend accepts both 'class' and 'className'
-      formData.append('subject', subject);
-      formData.append('topic', topic); // Backend accepts both 'topic' and 'name'
-      
-      // Determine if it's audio or document based on file extension
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      const audioExtensions = ['wav', 'mp3', 'm4a', 'ogg', 'flac', 'aac', 'wma', 'opus'];
-      const isAudio = audioExtensions.includes(fileExtension);
-      
-      if (isAudio) {
-        formData.append('audio', file);
-        formData.append('language', language);
-      } else {
-        formData.append('file', file);
+      if (!token) {
+        return {
+          success: false,
+          error: 'Authentication required. Please login first.'
+        };
       }
 
-      const response = await fetch(`${this.baseURL}/api/teacher/upload`, {
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add file or audio
+      if (data.file) {
+        formData.append('file', data.file);
+      } else if (data.audio) {
+        formData.append('audio', data.audio);
+        if (data.language) {
+          formData.append('language', data.language);
+        }
+      } else {
+        return {
+          success: false,
+          error: 'No file or audio provided'
+        };
+      }
+
+      // Add required metadata
+      formData.append('school', data.school);
+      formData.append('class', data.className); // API expects 'class' not 'className'
+      formData.append('subject', data.subject);
+      formData.append('topic', data.topic);
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.TEACHER.UPLOAD}`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
         body: formData
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
-        // Handle specific error codes
-        if (response.status === 403) {
-          throw new Error('Forbidden: You must be a teacher to upload files');
-        } else if (response.status === 400) {
-          throw new Error(result.error || 'Invalid request data');
-        } else if (response.status === 500) {
-          throw new Error(result.error || 'Server error during upload');
-        }
-        throw new Error(result.error || 'Upload failed');
+      if (response.ok) {
+        return {
+          success: true,
+          data: result
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Upload failed',
+          status: response.status
+        };
       }
+    } catch (error) {
+      console.error('Teacher upload error:', error);
+      return handleApiError(error);
+    }
+  }
 
-      // Backend returns 201 with note data
-      // Response includes:
-      // - note._id
-      // - note.school, class, subject, topic
-      // - note.text (base text)
-      // - note.sourceType (document|audio)
-      // - note.originalFilename
-      // - note.uploadedBy (teacher email)
-      // - note.variants.dyslexie (adapted text)
-      // - note.variants.audioUrl (TTS audio URL from Catbox)
-      // - note.variants.meta.dyslexieTips (optional tips)
-      // - note.createdAt, updatedAt
+  /**
+   * Generate audio from uploaded document
+   * This combines upload and TTS in one operation
+   * @param {Object} data - Same as uploadContent
+   * @returns {Promise<Object>} Result with audio URL
+   */
+  async uploadAndGenerateAudio(data) {
+    try {
+      // First upload the document
+      const uploadResult = await this.uploadContent(data);
       
-      return { 
-        success: true, 
-        data: result.note,
-        message: 'File uploaded successfully'
-      };
-    } catch (error) {
-      console.error('Upload error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to upload file'
-      };
-    }
-  }
-
-  /**
-   * Get subjects for a specific school and class
-   * 
-   * GET /api/subjects?school=...&class=...
-   * 
-   * @param {string} school - School name
-   * @param {string} className - Class level
-   * @returns {Promise} List of subjects
-   */
-  async getSubjects(school, className) {
-    try {
-      const params = new URLSearchParams({
-        school: school || 'DemoSchool',
-        class: className
-      });
-
-      const response = await fetch(`${this.baseURL}/api/subjects?${params}`, {
-        method: 'GET',
-        headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch subjects');
+      if (!uploadResult.success) {
+        return uploadResult;
       }
 
-      // Backend returns: { items: [{subjectName: "..."}, ...] }
-      // Transform to format expected by frontend
-      const subjects = result.items?.map(item => ({
-        value: item.subjectName.toLowerCase(),
-        label: item.subjectName.charAt(0).toUpperCase() + item.subjectName.slice(1)
-      })) || [];
+      // If successful, the backend should process and return the note
+      // We can then generate audio from the extracted text if needed
+      if (uploadResult.data?.note?.text) {
+        // Generate audio from the extracted text
+        const audioResult = await this.generateAudioFromText(uploadResult.data.note.text);
+        
+        return {
+          success: true,
+          data: {
+            ...uploadResult.data,
+            audioUrl: audioResult.audioUrl
+          }
+        };
+      }
 
-      return { 
-        success: true, 
-        data: subjects 
-      };
+      return uploadResult;
     } catch (error) {
-      console.error('Error fetching subjects:', error);
-      return { 
-        success: false, 
-        error: error.message,
-        data: [] // Return empty array on error
-      };
+      console.error('Upload and generate audio error:', error);
+      return handleApiError(error);
     }
   }
 
   /**
-   * Get notes for a specific school/class/subject/topic
-   * Used by students to fetch content
-   * 
-   * @param {Object} filters - Filter criteria
-   * @returns {Promise} List of notes
+   * Generate audio from text using TTS
+   * @param {string} text - Text to convert to speech
+   * @param {string} voice - Voice option (optional)
+   * @returns {Promise<Object>} Result with audio URL
    */
-  async getNotes(filters) {
+  async generateAudioFromText(text, voice = null) {
     try {
-      const params = new URLSearchParams(filters);
+      const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`${this.baseURL}/api/notes?${params}`, {
-        method: 'GET',
-        headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch notes');
+      const requestBody = { text };
+      if (voice) {
+        requestBody.voice = voice;
       }
 
-      return { 
-        success: true, 
-        data: result.notes || []
-      };
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.TTS}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        // TTS returns audio file directly
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        
+        return {
+          success: true,
+          audioUrl
+        };
+      } else {
+        const error = await response.json();
+        return {
+          success: false,
+          error: error.error || 'Audio generation failed'
+        };
+      }
     } catch (error) {
-      console.error('Error fetching notes:', error);
-      return { 
-        success: false, 
-        error: error.message,
-        data: []
-      };
+      console.error('TTS error:', error);
+      return handleApiError(error);
     }
   }
 
   /**
-   * Get teacher's uploaded content
-   * 
-   * @returns {Promise} List of teacher's uploads
+   * Get subjects for a specific class
+   * @param {string} className - Class level (6-12)
+   * @returns {Promise<Object>} List of subjects
    */
-  async getMyUploads() {
+  async getSubjects(className) {
     try {
-      const response = await fetch(`${this.baseURL}/api/teacher/uploads`, {
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        return {
+          success: false,
+          error: 'Authentication required'
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.SUBJECTS}?class=${className}`, {
         method: 'GET',
         headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         }
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch uploads');
+      if (response.ok) {
+        return {
+          success: true,
+          data: result.items || []
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Failed to fetch subjects'
+        };
       }
-
-      return { 
-        success: true, 
-        data: result.uploads || []
-      };
     } catch (error) {
-      console.error('Error fetching uploads:', error);
-      return { 
-        success: false, 
-        error: error.message,
-        data: []
-      };
+      console.error('Get subjects error:', error);
+      return handleApiError(error);
     }
   }
 }
 
-export const teacherService = new TeacherService();
+// Create singleton instance
+const teacherService = new TeacherService();
+
 export default teacherService;

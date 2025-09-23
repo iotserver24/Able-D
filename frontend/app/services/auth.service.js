@@ -175,12 +175,21 @@ class AuthService {
         throw new Error(result.error || result.message || 'Registration failed');
       }
 
-      // Backend returns: { user: {...}, accessToken: "..." }
-      this.setAuthData(result);
+      // Set auth data with the result
+      if (result.accessToken) {
+        this.setAuthData(result);
+      }
+      
+      // Return success with user data
       return { 
         success: true, 
-        data: result,
-        user: result.user 
+        data: {
+          user: {
+            ...result.user,
+            role: 'teacher'
+          },
+          token: result.accessToken
+        }
       };
     } catch (error) {
       console.error('Teacher registration error:', error);

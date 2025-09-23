@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const result = await authService.loginStudent(credentials);
+      const result = await authService.loginStudent({ email, password });
       
       if (result.success) {
         setUser(result.data.user);
@@ -123,9 +123,21 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.registerTeacher(data);
       
       if (result.success) {
-        setUser(result.data.user);
+        // Set the user data from the result
+        const userData = result.data?.user || result.user || { 
+          ...data, 
+          role: 'teacher',
+          _id: Date.now().toString() 
+        };
+        
+        setUser(userData);
         setIsAuthenticated(true);
-        return { success: true };
+        
+        // Return the user data for navigation
+        return { 
+          success: true, 
+          user: userData 
+        };
       } else {
         setError(result.error);
         return { success: false, error: result.error };
@@ -145,12 +157,18 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const result = await authService.loginTeacher(credentials);
+      const result = await authService.loginTeacher({ email, password });
       
       if (result.success) {
-        setUser(result.data.user);
+        const userData = result.data?.user || result.user;
+        setUser(userData);
         setIsAuthenticated(true);
-        return { success: true };
+        
+        // Return the user data for navigation
+        return { 
+          success: true, 
+          user: userData 
+        };
       } else {
         setError(result.error);
         return { success: false, error: result.error };

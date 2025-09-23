@@ -1,5 +1,4 @@
 import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router';
 import { DocumentUpload } from '../document-upload/DocumentUpload';
 import { AudioRecorder } from '../audio-input/AudioRecorder';
 import QASection from './QASection';
@@ -9,8 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import AdaptiveUIContext from '../../../contexts/AdaptiveUIContext';
 import TTSContext from '../../../contexts/TTSContext';
 import { TTSController } from '../../../components/tts/TTSController';
-import teacherService from '../../../services/teacher.service';
-import authService from '../../../services/auth.service';
+import notesService from '../../../services/notes.service';
 
 export function Dashboard({ studentType = 'vision' }) {
   const navigate = useNavigate();
@@ -71,21 +69,74 @@ export function Dashboard({ studentType = 'vision' }) {
         readPageContent();
       }, 1500);
     }
-  }, [ttsEnabled, studentType]);
+    
+    // Fetch real notes from backend
+    loadNotes();
+  }, [sessionId, ttsEnabled, studentType]);
 
   const loadSubjects = async () => {
     try {
-      const school = authService.getCurrentSchool() || 'DemoSchool';
-      const result = await teacherService.getSubjects(school, selectedClass);
+      setLoading(true);
+      setError(null);
+      
+      // Fetch notes based on student's class and subject
+      const filters = {};
+      if (studentInfo?.school) filters.school = studentInfo.school;
+      if (studentInfo?.class) filters.className = studentInfo.class;
+      if (studentInfo?.subject) filters.subject = studentInfo.subject;
+      
+      const result = await notesService.getNotes(filters);
       
       if (result.success) {
-        setSubjects(result.data);
-        if (result.data.length > 0 && !selectedSubject) {
-          setSelectedSubject(result.data[0].value);
+        // Transform the notes data to match the expected format
+        const transformedNotes = result.data.map(note => ({
+          id: note._id || note.id,
+          title: note.topic || note.name || 'Untitled',
+          content: note.text || note.content || '',
+          subject: note.subject,
+          class: note.class,
+          createdAt: note.createdAt,
+          uploadedBy: note.uploadedBy
+        }));
+        
+        setNotes(transformedNotes);
+        
+        // Announce when notes are loaded
+        if (ttsEnabled) {
+          announceSuccess(`Loaded ${transformedNotes.length} notes`);
+        }
+      } else {
+        // If no notes found or error, show welcome message
+        setNotes([
+          { 
+            id: 1, 
+            title: 'Welcome to Able-D', 
+            content: 'No notes available yet. Your teacher will upload content soon!' 
+          }
+        ]);
+        
+        if (ttsEnabled) {
+          announceSuccess('Dashboard loaded. No notes available yet.');
         }
       }
     } catch (err) {
-      console.error('Failed to load subjects:', err);
+      console.error('Failed to load notes:', err);
+      setError('Failed to load notes. Please try again later.');
+      
+      // Show default welcome note on error
+      setNotes([
+        { 
+          id: 1, 
+          title: 'Welcome to Able-D', 
+          content: 'Unable to load notes at this time. Please check your connection.' 
+        }
+      ]);
+      
+      if (ttsEnabled) {
+        announceError('Failed to load notes');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

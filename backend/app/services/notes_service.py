@@ -34,6 +34,7 @@ def save_note(
     source_type: str,
     original_filename: Optional[str] = None,
     extra_meta: Optional[Dict] = None,
+    variants: Optional[Dict] = None,
 ) -> Dict:
     ensure_indexes()
     doc: Dict = {
@@ -50,14 +51,44 @@ def save_note(
     }
     if extra_meta:
         doc["meta"] = extra_meta
+    if variants:
+        # Store additional representations for clients: base, dyslexie, audioUrl, etc.
+        doc["variants"] = variants
 
-    try:
-        res = _notes().insert_one(doc)
-        doc["_id"] = str(res.inserted_id)
-    except Exception:
-        # allow operation to succeed even if DB unavailable, but mark as ephemeral
-        doc["_id"] = None
+    # Persist to MongoDB; if insertion fails, propagate the exception so callers can return an error
+    res = _notes().insert_one(doc)
+    doc["_id"] = str(res.inserted_id)
     return doc
 
 
+def list_topics(school: str, class_name: str, subject: str) -> list[str]:
+    """Return sorted distinct topics for the given school/class/subject."""
+    ensure_indexes()
+    cursor = _notes().find(
+        {"school": school.strip(), "class": class_name.strip(), "subject": subject.strip()},
+        {"topic": 1, "_id": 0},
+    )
+    topics = sorted({doc.get("topic", "") for doc in cursor if doc.get("topic")})
+    return topics
+
+
+def get_note(school: str, class_name: str, subject: str, topic: str) -> Optional[Dict]:
+    """Fetch a single note by key; returns None if not found. Stringify _id if present."""
+    ensure_indexes()
+    doc = _notes().find_one({
+        "school": school.strip(),
+        "class": class_name.strip(),
+        "subject": subject.strip(),
+        "topic": topic.strip(),
+    })
+    if not doc:
+        return None
+    # normalize _id to string
+    obj_id = doc.get("_id")
+    if obj_id is not None:
+        try:
+            doc["_id"] = str(obj_id)
+        except (TypeError, ValueError):
+            doc["_id"] = f"{obj_id}"
+    return doc
 

@@ -1,7 +1,7 @@
 // app/teacher/dashboard/TeacherDashboard.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
-import UploadContent from './UploadContent';
+import UploadContent from './UploadContentNew';
 import ReviewContent from './ReviewContent';
 import ProfileContent from './ProfileContent';
 

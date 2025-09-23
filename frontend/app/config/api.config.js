@@ -7,7 +7,7 @@
 // In production, this should be your backend server URL
 // Vite uses import.meta.env instead of process.env
 // Using a simpler approach that works with Vite
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://able-d.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:5000';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -33,14 +33,15 @@ export const API_ENDPOINTS = {
   // Subjects
   SUBJECTS: '/api/subjects',
   
-  // Teacher specific endpoints
+  // Teacher endpoints
   TEACHER: {
     UPLOAD: '/api/teacher/upload',
   },
   
-  // AI Services
+  // AI endpoints
   AI: {
-    PROCESS: '/api/ai',  // Handles both notes and Q&A modes
+    GENERATE: '/api/ai',
+    HEALTH: '/api/ai/health',
   },
 };
 

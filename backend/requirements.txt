@@ -12,6 +12,7 @@ python-pptx>=0.6.21
 pymongo[srv]>=4.7.3
 flask-jwt-extended>=4.6.0
 passlib[bcrypt]>=1.7.4
+requests>=2.32.3
 
 # Firebase Admin SDK
 firebase-admin>=6.5.0

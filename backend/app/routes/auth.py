@@ -16,7 +16,6 @@ from ..services.auth_service import (
     register_teacher,
 )
 
-
 auth_bp = Blueprint("auth", __name__)
 
 
@@ -117,16 +116,13 @@ def teacher_register():
     try:
         user = register_teacher(name, email, password, school)
         token = create_access_token(
-            identity={
-                "role": "teacher",
-                "email": user.get("email"),
-                "school": user.get("school"),
-            }
+            identity=user.get("email"),
+            additional_claims={"role": "teacher", "school": user.get("school")},
         )
         return jsonify({"user": user, "accessToken": token}), 201
     except Exception as e:
         # Ensure we never 500 due to DB connectivity; create ephemeral token instead
-        token = create_access_token(identity={"role": "teacher", "email": email, "school": school})
+        token = create_access_token(identity=email, additional_claims={"role": "teacher", "school": school})
         return jsonify({
             "user": {"role": "teacher", "email": email, "school": school},
             "accessToken": token,
@@ -148,17 +144,24 @@ def teacher_login():
         if not user:
             return jsonify({"error": "Invalid email or password"}), 401
         token = create_access_token(
-            identity={
-                "role": "teacher",
-                "email": user.get("email"),
-                "school": user.get("school"),
-            }
+            identity=user.get("email"),
+            additional_claims={"role": "teacher", "school": user.get("school")},
         )
         return jsonify({"user": user, "accessToken": token}), 200
     except Exception:
         # Fallback when MongoDB is not available: issue ephemeral token
-        token = create_access_token(identity={"role": "teacher", "email": email})
+        token = create_access_token(identity=email, additional_claims={"role": "teacher"})
         return jsonify({"user": {"role": "teacher", "email": email}, "accessToken": token, "warning": "DB unavailable; ephemeral session issued"}), 200
+
+
+@auth_bp.route("/auth/verify", methods=["GET", "OPTIONS"])
+@jwt_required()
+def verify_token():
+    """Verify JWT token and return user info"""
+    identity = get_jwt_identity()
+    if identity:
+        return jsonify({"valid": True, "user": identity}), 200
+    return jsonify({"valid": False}), 401
 
 
 @auth_bp.route("/auth/firebase/verify", methods=["GET"])  # verify Firebase ID token
