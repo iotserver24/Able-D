@@ -16,7 +16,6 @@ from ..services.auth_service import (
     register_teacher,
 )
 
-
 auth_bp = Blueprint("auth", __name__)
 
 
@@ -159,6 +158,16 @@ def teacher_login():
         # Fallback when MongoDB is not available: issue ephemeral token
         token = create_access_token(identity={"role": "teacher", "email": email})
         return jsonify({"user": {"role": "teacher", "email": email}, "accessToken": token, "warning": "DB unavailable; ephemeral session issued"}), 200
+
+
+@auth_bp.route("/auth/verify", methods=["GET", "OPTIONS"])
+@jwt_required()
+def verify_token():
+    """Verify JWT token and return user info"""
+    identity = get_jwt_identity()
+    if identity:
+        return jsonify({"valid": True, "user": identity}), 200
+    return jsonify({"valid": False}), 401
 
 
 @auth_bp.route("/auth/firebase/verify", methods=["GET"])  # verify Firebase ID token
