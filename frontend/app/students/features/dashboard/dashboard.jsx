@@ -1,29 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { api } from '../../../utils/api';
 import { DocumentUpload } from '../document-upload/DocumentUpload';
 import { AudioRecorder } from '../audio-input/AudioRecorder';
 import { QASection } from './QASection';
 import { NotesList } from '../notes/NotesList';
-import { useAdaptiveUI } from '../../../contexts/AdaptiveUIContext';
 import { STUDENT_TYPES } from '../../../constants/studentTypes';
-import { useMockAuth } from '../../../constants/MockAuthContext';
-import { useTTSContext } from '../../../contexts/TTSContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import AdaptiveUIContext from '../../../contexts/AdaptiveUIContext';
+import TTSContext from '../../../contexts/TTSContext';
 import { TTSController } from '../../../components/tts/TTSController';
 
-export function Dashboard({ sessionId, studentType }) {
+export function Dashboard({ sessionId, studentType, studentInfo }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { uiSettings } = useAdaptiveUI();
-  const { user, logout } = useMockAuth();
-  const { 
-    isEnabled: ttsEnabled, 
-    readPageContent, 
-    announceNavigation,
-    announceSuccess,
-    announceError,
-    speak 
-  } = useTTSContext();
+  
+  // Use context safely with fallback
+  const adaptiveContext = useContext(AdaptiveUIContext);
+  const uiSettings = adaptiveContext?.uiSettings || {};
+  
+  // Use auth context
+  const { user, logout } = useAuth();
+  
+  // Use TTS context safely
+  const ttsContext = useContext(TTSContext);
+  const ttsEnabled = ttsContext?.isEnabled || false;
+  const readPageContent = ttsContext?.readPageContent || (() => {});
+  const announceNavigation = ttsContext?.announceNavigation || (() => {});
+  const announceSuccess = ttsContext?.announceSuccess || (() => {});
+  const announceError = ttsContext?.announceError || (() => {});
+  const speak = ttsContext?.speak || (() => {});
   
   const studentConfig = Object.values(STUDENT_TYPES).find(
     type => type.value === studentType
@@ -397,7 +403,7 @@ export function Dashboard({ sessionId, studentType }) {
                                          studentConfig?.icon === 'mic' ? '🎤' : '📚'}</span>
             <div>
               <p className="text-sm text-gray-600">Logged in as</p>
-              <p className="font-semibold">{user?.name || 'Student'} - {studentConfig?.label}</p>
+              <p className="font-semibold">{studentInfo?.name || user?.name || 'Student'} - {studentConfig?.label}</p>
             </div>
           </div>
           <button 

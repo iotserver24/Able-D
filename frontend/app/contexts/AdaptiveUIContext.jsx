@@ -156,3 +156,5 @@ export const AdaptiveUIProvider = ({ children, studentType }) => {
     </AdaptiveUIContext.Provider>
   );
 };
+
+export default AdaptiveUIContext;

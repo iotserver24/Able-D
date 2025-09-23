@@ -8,7 +8,7 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from "react-router";
-import { MockAuthProvider } from "./constants/MockAuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import "./app.css";
 
 export function Layout({ children }) {
@@ -30,11 +30,11 @@ export function Layout({ children }) {
 }
 
 export default function App() {
-  // Using Mock Authentication for development
+  // Using Real Authentication with Backend API
   return (
-    <MockAuthProvider>
+    <AuthProvider>
       <Outlet />
-    </MockAuthProvider>
+    </AuthProvider>
   );
 }
 

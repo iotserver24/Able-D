@@ -22,6 +22,7 @@ export function StudentAuth() {
 
   const [showTTSWelcome, setShowTTSWelcome] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Handle login with TTS check
   const handleLoginWithTTS = async () => {
@@ -31,6 +32,13 @@ export function StudentAuth() {
     if (success && studentType === 'visually_impaired') {
       setShowTTSWelcome(true);
     }
+  };
+
+  // Handle TTS Demo
+  const handleTTSDemo = () => {
+    setStudentType('visually_impaired');
+    setDemoMode(true);
+    setShowTTSWelcome(true);
   };
 
   // Handle TTS welcome popup close
@@ -108,10 +116,22 @@ export function StudentAuth() {
               <span>{isLoading ? 'Signing in...' : 'Continue to Dashboard'}</span>
             </Button>
             
+            {/* TTS Demo Button */}
+            <Button
+              onClick={handleTTSDemo}
+              className="w-full flex items-center justify-center gap-2 py-3 md:py-4 text-sm md:text-base bg-purple-600 hover:bg-purple-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              <span>Try TTS Demo (Visually Impaired)</span>
+            </Button>
+            
             <p className="text-center text-xs md:text-sm text-gray-500 px-4">
               By signing in, you agree to our accessibility-focused learning environment
             </p>
-          </div>
+          </div>  
 
           {/* Mobile-friendly footer */}
           <div className="mt-6 pt-4 border-t border-gray-200 md:hidden">
@@ -120,6 +140,62 @@ export function StudentAuth() {
             </p>
           </div>
         </Card>
+
+        {/* Demo Content (shown when TTS is enabled in demo mode) */}
+        {demoMode && ttsEnabled && (
+          <div className="fixed inset-0 bg-white z-30 overflow-auto">
+            <div className="max-w-4xl mx-auto p-4">
+              <header className="mb-8 text-center">
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                  TTS Demo - Adaptive Learning Dashboard
+                </h1>
+                <p className="text-lg text-gray-600">
+                  Welcome, Visually Impaired Student (Demo Mode)
+                </p>
+              </header>
+
+              <main role="main" className="space-y-6">
+                <Card className="p-6">
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                    How TTS Works
+                  </h2>
+                  <p className="text-gray-700 mb-4">
+                    This Text-to-Speech system reads page content aloud for visually impaired students.
+                    Use the keyboard shortcuts below to control the reading.
+                  </p>
+                  <div className="space-y-2 text-gray-700">
+                    <p>• Press Alt+R to read the entire page</p>
+                    <p>• Press Alt+S to stop reading</p>
+                    <p>• Press Alt+P to pause or resume</p>
+                    <p>• Press Alt+F to read the focused element</p>
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                    Sample Lesson Content
+                  </h2>
+                  <p className="text-gray-700 mb-4">
+                    Welcome to your mathematics lesson. Today we will learn about basic arithmetic.
+                    Addition is combining numbers. For example, 2 plus 3 equals 5.
+                    Subtraction is taking away. For example, 5 minus 2 equals 3.
+                  </p>
+                </Card>
+
+                <Button 
+                  onClick={() => {
+                    setDemoMode(false);
+                    setTtsEnabled(false);
+                    setStudentType('');
+                  }}
+                  className="w-full"
+                >
+                  Exit Demo
+                </Button>
+              </main>
+            </div>
+          </div>
+        )}
       </div>
     </TTSProvider>
   );
