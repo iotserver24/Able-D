@@ -10,5 +10,5 @@ export function meta({}) {
 }
 
 export default function Home() {
-  return <Students />;
+  return <Teacher />;
 }
