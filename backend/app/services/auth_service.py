@@ -113,3 +113,30 @@ def authenticate_teacher(email: str, password: str) -> Optional[dict]:
     return user
 
 
+def authenticate_student(student_id: Optional[str] = None, anonymous_id: Optional[str] = None) -> Optional[dict]:
+    """Authenticate a student by their ID or anonymous ID"""
+    if not student_id and not anonymous_id:
+        return None
+    
+    from bson import ObjectId
+    
+    # Try to find by student ID first, then anonymous ID
+    query = {"role": "student"}
+    if student_id:
+        try:
+            # Convert string ID to ObjectId for MongoDB query
+            query["_id"] = ObjectId(student_id)
+        except Exception:
+            # If ObjectId conversion fails, the ID is invalid
+            return None
+    elif anonymous_id:
+        query["anonymousId"] = anonymous_id
+    
+    user = _users().find_one(query)
+    if not user:
+        return None
+    
+    user["_id"] = str(user["_id"])  # type: ignore[index]
+    return user
+
+
