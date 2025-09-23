@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from ..services.subject_service import list_subjects_for_class_and_school
 
@@ -12,8 +12,9 @@ subjects_bp = Blueprint("subjects", __name__)
 @subjects_bp.route("/subjects", methods=["GET"])  # GET /api/subjects?class=10
 @jwt_required()
 def list_subjects():
-    identity = get_jwt_identity() or {}
-    role = identity.get("role")
+    _identity = get_jwt_identity()  # email string for teachers/students in new JWT format
+    claims = get_jwt() or {}
+    role = claims.get("role")
 
     # Only allow students and teachers; others forbidden
     if role not in {"student", "teacher"}:
@@ -22,7 +23,7 @@ def list_subjects():
     # Source of truth for school:
     # - For students: school from JWT identity (set at login)
     # - For teachers: school should be part of JWT identity after login/register; if missing, allow query param fallback
-    school = identity.get("school")
+    school = claims.get("school")
     if role == "teacher" and not school:
         school = (request.args.get("school") or "").strip()
 
@@ -30,7 +31,8 @@ def list_subjects():
     # Students may also have class in token; if not provided as query, fall back to token.
     class_q = (request.args.get("class") or request.args.get("className") or "").strip()
     if role == "student" and not class_q:
-        class_q = (identity.get("class") or "")
+        # student JWT may carry class in identity only for student flows; keep query param as primary
+        class_q = class_q or ""
 
     if not school:
         return jsonify({"error": "Missing school in identity"}), 400

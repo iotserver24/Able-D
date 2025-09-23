@@ -61,4 +61,34 @@ def save_note(
     return doc
 
 
+def list_topics(school: str, class_name: str, subject: str) -> list[str]:
+    """Return sorted distinct topics for the given school/class/subject."""
+    ensure_indexes()
+    cursor = _notes().find(
+        {"school": school.strip(), "class": class_name.strip(), "subject": subject.strip()},
+        {"topic": 1, "_id": 0},
+    )
+    topics = sorted({doc.get("topic", "") for doc in cursor if doc.get("topic")})
+    return topics
+
+
+def get_note(school: str, class_name: str, subject: str, topic: str) -> Optional[Dict]:
+    """Fetch a single note by key; returns None if not found. Stringify _id if present."""
+    ensure_indexes()
+    doc = _notes().find_one({
+        "school": school.strip(),
+        "class": class_name.strip(),
+        "subject": subject.strip(),
+        "topic": topic.strip(),
+    })
+    if not doc:
+        return None
+    # normalize _id to string
+    obj_id = doc.get("_id")
+    if obj_id is not None:
+        try:
+            doc["_id"] = str(obj_id)
+        except (TypeError, ValueError):
+            doc["_id"] = f"{obj_id}"
+    return doc
 
