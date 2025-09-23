@@ -13,3 +13,10 @@ pymongo[srv]>=4.7.3
 flask-jwt-extended>=4.6.0
 passlib[bcrypt]>=1.7.4
 
+# Firebase Admin SDK
+firebase-admin>=6.5.0
+
+# AI - Gemini clients
+google-genai
+google-generativeai
+

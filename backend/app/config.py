@@ -15,3 +15,8 @@ class Config:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "abled")
 
+    # Firebase Admin
+    FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
+    FIREBASE_CREDENTIALS_FILE = os.getenv("FIREBASE_CREDENTIALS_FILE")  # path to service account json
+    FIREBASE_CREDENTIALS_BASE64 = os.getenv("FIREBASE_CREDENTIALS_BASE64")  # base64 of service account json
+

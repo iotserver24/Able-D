@@ -21,8 +21,10 @@ def list_subjects():
 
     # Source of truth for school:
     # - For students: school from JWT identity (set at login)
-    # - For teachers: school should be part of JWT identity after login/register
+    # - For teachers: school should be part of JWT identity after login/register; if missing, allow query param fallback
     school = identity.get("school")
+    if role == "teacher" and not school:
+        school = (request.args.get("school") or "").strip()
 
     # Class is provided as query param but not trusted for cross-school access.
     # Students may also have class in token; if not provided as query, fall back to token.
