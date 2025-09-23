@@ -19,6 +19,10 @@ This backend provides APIs for document text extraction and speech-to-text (Azur
   - Response:
     { "filename": "sample.mp3", "language": "en-US", "text": "transcription" }
 
+- POST `/api/tts`
+  - JSON body or form: `text` (required), `voice` (optional; defaults to env DEFAULT_VOICE or `en-US-JennyNeural`)
+  - Returns: MP3 audio stream (`audio/mpeg`).
+
 ## Project Structure
 
 ```
