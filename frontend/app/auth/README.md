@@ -77,7 +77,7 @@ Set the backend API URL in your environment file:
 cp .env.example .env
 
 # Edit .env and set your backend URL
-REACT_APP_API_URL=http://localhost:5000
+VITE_BACKEND_API_URL=https://back.hcknroll.megavault.pw
 ```
 
 ## Usage

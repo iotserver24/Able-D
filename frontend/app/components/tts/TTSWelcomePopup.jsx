@@ -36,7 +36,7 @@ export function TTSWelcomePopup() {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center tts-welcome-popup"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -127,7 +127,7 @@ export function TTSWelcomePopup() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -137,6 +137,9 @@ export function TTSWelcomePopup() {
             opacity: 1;
             transform: scale(1);
           }
+        }
+        .tts-welcome-popup {
+          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>

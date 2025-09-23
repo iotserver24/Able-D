@@ -20,8 +20,11 @@ export const TTSProvider = ({ children }) => {
   const [currentlyReading, setCurrentlyReading] = useState(null);
   const [hasShownWelcome, setHasShownWelcome] = useState(false);
   
-  // Check if user is visually impaired from localStorage
+  // Check if user is visually impaired from localStorage (only on client)
   useEffect(() => {
+    // Only access localStorage on the client side
+    if (typeof window === 'undefined') return;
+    
     const user = localStorage.getItem('user');
     if (user) {
       try {
@@ -118,8 +121,11 @@ export const TTSProvider = ({ children }) => {
     }
   }, [isEnabled, tts]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (only on client)
   useEffect(() => {
+    // Only add event listeners on the client side
+    if (typeof window === 'undefined') return;
+    
     const handleKeyPress = (e) => {
       if (!isEnabled) return;
       

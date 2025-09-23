@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router';
 import { DocumentUpload } from '../document-upload/DocumentUpload';
 import { AudioRecorder } from '../audio-input/AudioRecorder';
 import QASection from './QASection';
@@ -71,8 +72,8 @@ export function Dashboard({ studentType = 'vision' }) {
     }
     
     // Fetch real notes from backend
-    loadNotes();
-  }, [sessionId, ttsEnabled, studentType]);
+    loadSubjects();
+  }, [ttsEnabled, studentType]);
 
   const loadSubjects = async () => {
     try {
@@ -81,9 +82,9 @@ export function Dashboard({ studentType = 'vision' }) {
       
       // Fetch notes based on student's class and subject
       const filters = {};
-      if (studentInfo?.school) filters.school = studentInfo.school;
-      if (studentInfo?.class) filters.className = studentInfo.class;
-      if (studentInfo?.subject) filters.subject = studentInfo.subject;
+      if (user?.school) filters.school = user.school;
+      if (user?.class) filters.className = user.class;
+      if (user?.subject) filters.subject = user.subject;
       
       const result = await notesService.getNotes(filters);
       
@@ -99,7 +100,7 @@ export function Dashboard({ studentType = 'vision' }) {
           uploadedBy: note.uploadedBy
         }));
         
-        setNotes(transformedNotes);
+        setSubjects(transformedNotes);
         
         // Announce when notes are loaded
         if (ttsEnabled) {
@@ -107,11 +108,10 @@ export function Dashboard({ studentType = 'vision' }) {
         }
       } else {
         // If no notes found or error, show welcome message
-        setNotes([
+        setSubjects([
           { 
-            id: 1, 
-            title: 'Welcome to Able-D', 
-            content: 'No notes available yet. Your teacher will upload content soon!' 
+            value: 'general',
+            label: 'General Studies'
           }
         ]);
         
@@ -123,12 +123,11 @@ export function Dashboard({ studentType = 'vision' }) {
       console.error('Failed to load notes:', err);
       setError('Failed to load notes. Please try again later.');
       
-      // Show default welcome note on error
-      setNotes([
+      // Show default subjects on error
+      setSubjects([
         { 
-          id: 1, 
-          title: 'Welcome to Able-D', 
-          content: 'Unable to load notes at this time. Please check your connection.' 
+          value: 'general',
+          label: 'General Studies'
         }
       ]);
       
@@ -142,8 +141,8 @@ export function Dashboard({ studentType = 'vision' }) {
 
   const loadTopics = async () => {
     try {
-      const school = authService.getCurrentSchool() || 'DemoSchool';
-      const result = await teacherService.getNotes({
+      const school = user?.school || 'DemoSchool';
+      const result = await notesService.getNotes({
         school,
         class: selectedClass,
         subject: selectedSubject

@@ -19,18 +19,16 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
-  // Check for existing session on mount (only in browser)
+  // Ensure consistent hydration by setting client flag after mount
   useEffect(() => {
-    if (isBrowser) {
-      checkAuthStatus();
-    } else {
-      setIsLoading(false);
-    }
+    setIsClient(true);
+    checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
-    if (!isBrowser) {
+    if (!isClient) {
       setIsLoading(false);
       return;
     }
@@ -90,12 +88,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Student Login
-  const loginStudent = async (credentials) => {
+  const loginStudent = async (email, password) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await authService.loginStudent({ email, password });
+      const result = await authService.loginStudent(email, password);
       
       if (result.success) {
         setUser(result.data.user);
@@ -127,7 +125,7 @@ export const AuthProvider = ({ children }) => {
         const userData = result.data?.user || result.user || { 
           ...data, 
           role: 'teacher',
-          _id: Date.now().toString() 
+          _id: `teacher-${Math.random().toString(36).substr(2, 9)}` 
         };
         
         setUser(userData);
@@ -152,12 +150,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Teacher Login
-  const loginTeacher = async (credentials) => {
+  const loginTeacher = async (email, password) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await authService.loginTeacher({ email, password });
+      const result = await authService.loginTeacher(email, password);
       
       if (result.success) {
         const userData = result.data?.user || result.user;

@@ -94,6 +94,8 @@ class AuthService {
    */
   async registerStudent(data) {
     try {
+      console.log('Sending registration data:', data);
+      
       const response = await fetch(`${this.baseURL}/student/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,6 +103,7 @@ class AuthService {
       });
 
       const result = await response.json();
+      console.log('Registration response:', response.status, result);
       
       if (!response.ok) {
         throw new Error(result.error || 'Registration failed');
@@ -114,6 +117,7 @@ class AuthService {
         user: result.user 
       };
     } catch (error) {
+      console.error('Registration error:', error);
       return { success: false, error: error.message };
     }
   }

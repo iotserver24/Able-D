@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://back.hcknroll.megavault.pw/api';
 
 export const api = {
   async createSession(studentType) {

@@ -23,7 +23,7 @@ export function TeacherRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password || !formData.school) {
       setError("Please fill in all required fields");
       return false;
     }
@@ -60,7 +60,7 @@ export function TeacherRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        school: formData.school || undefined,  // Backend expects this field
+        school: formData.school,  // Now required field
       };
       
       // Register the teacher using the context function
@@ -151,16 +151,20 @@ export function TeacherRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              School/Institution (Optional)
+              School/Institution *
             </label>
-            <input
-              type="text"
+            <select
               name="school"
               value={formData.school}
               onChange={handleInputChange}
-              placeholder="Enter your school name"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+              required
+            >
+              <option value="">Select your school</option>
+              <option value="NMAMIT">NMAMIT</option>
+              <option value="ksmit">ksmit</option>
+              <option value="abcmit">abcmit</option>
+            </select>
           </div>
 
           <div>

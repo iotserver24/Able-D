@@ -7,7 +7,7 @@
 // In production, this should be your backend server URL
 // Vite uses import.meta.env instead of process.env
 // Using a simpler approach that works with Vite
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:5000';
+export const API_BASE_URL = 'https://back.hcknroll.megavault.pw';
 
 // API Endpoints
 export const API_ENDPOINTS = {

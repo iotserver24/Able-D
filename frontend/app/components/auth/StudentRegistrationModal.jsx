@@ -21,14 +21,9 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
     email: "",
     password: "",
     confirmPassword: "",
-    age: "",
     class: "",
     subject: "",
     school: "",
-    parentName: "",
-    parentEmail: "",
-    parentPhone: "",
-    specialNeeds: "",
   });
 
   const handleTypeSelect = (type) => {
@@ -127,7 +122,7 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
       {ttsEnabled && <TTSController position="bottom-right" />}
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto py-8">
-        <Card className="w-full max-w-2xl mx-4 p-8 relative my-auto">
+        <Card className="w-full max-w-md mx-4 p-8 relative my-auto">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -182,21 +177,6 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
                   </div>
                 </button>
               ))}
-              
-              <button
-                onClick={() => handleTypeSelect('none')}
-                className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <span className="text-2xl">✨</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">Regular Learning</h3>
-                    <p className="text-sm text-gray-600 mt-1">Standard learning experience without special accommodations</p>
-                  </div>
-                </div>
-              </button>
             </div>
           )}
 
@@ -217,146 +197,100 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
                 </div>
               )}
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Student Information */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700">Student Information</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Grade/Class *
-                    </label>
-                    <input
-                      type="text"
-                      name="class"
-                      value={formData.class}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 10"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Subject *
-                    </label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Mathematics"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      School *
-                    </label>
-                    <input
-                      type="text"
-                      name="school"
-                      value={formData.school}
-                      onChange={handleInputChange}
-                      placeholder="e.g., ABC High School"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter your full name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
                 </div>
 
-                {/* Parent/Guardian Information */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700">Parent/Guardian Information</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent/Guardian Name
-                    </label>
-                    <input
-                      type="text"
-                      name="parentName"
-                      value={formData.parentName}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="student@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent/Guardian Email
-                    </label>
-                    <input
-                      type="email"
-                      name="parentEmail"
-                      value={formData.parentEmail}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Grade/Class *
+                  </label>
+                  <select
+                    name="class"
+                    value={formData.class}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select your class</option>
+                    <option value="1">1st Standard</option>
+                    <option value="2">2nd Standard</option>
+                    <option value="3">3rd Standard</option>
+                    <option value="4">4th Standard</option>
+                    <option value="5">5th Standard</option>
+                    <option value="6">6th Standard</option>
+                    <option value="7">7th Standard</option>
+                    <option value="8">8th Standard</option>
+                    <option value="9">9th Standard</option>
+                    <option value="10">10th Standard</option>
+                    <option value="11">11th Standard</option>
+                    <option value="12">12th Standard</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent/Guardian Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="parentPhone"
-                      value={formData.parentPhone}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subject *
+                  </label>
+                  <input
+                    type="text"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Mathematics, Science, English"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Special Needs/Notes
-                    </label>
-                    <textarea
-                      name="specialNeeds"
-                      value={formData.specialNeeds}
-                      onChange={handleInputChange}
-                      rows="3"
-                      placeholder="Any additional information about learning needs..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    School *
+                  </label>
+                  <select
+                    name="school"
+                    value={formData.school}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select your school</option>
+                    <option value="NMAMIT">NMAMIT</option>
+                    <option value="ksmit">ksmit</option>
+                    <option value="abcmit">abcmit</option>
+                  </select>
                 </div>
               </div>
 
               {/* Password Fields */}
-              <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
+              <div className="space-y-4 pt-4 border-t">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Password *
@@ -366,6 +300,7 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
+                    placeholder="Minimum 6 characters"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                     minLength="6"
@@ -381,6 +316,7 @@ export function StudentRegistrationModal({ onClose, onSuccess, onSwitchToLogin }
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
+                    placeholder="Re-enter your password"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />

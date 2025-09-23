@@ -25,7 +25,7 @@ export const STUDENT_TYPES = {
   },
   SLOW_LEARNER: {
     value: "slow_learner",
-    label: "Special Learning Needs",
+    label: "Dyslexia Support",
     description: "Simplified explanations with examples",
     features: ["Simplified Content", "Step-by-Step Learning", "Visual Aids"],
     icon: "book",
