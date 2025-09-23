@@ -1,5 +1,4 @@
-# Core dependencies for simple_document_extractor.py
-# Minimal set of efficient libraries
+# Core dependencies for document extraction and speech services
 
 # PDF extraction - PyMuPDF is faster than PyPDF2/pdfplumber
 pymupdf>=1.23.0
@@ -7,8 +6,18 @@ pymupdf>=1.23.0
 # Word document extraction
 python-docx>=0.8.11
 
-# PowerPoint extraction  
+# PowerPoint extraction
 python-pptx>=0.6.21
 
-# All dependencies can be installed with:
-# pip install -r requirements_simple.txt
+# Azure Speech Services (for STT/TTS)
+azure-cognitiveservices-speech>=1.41.1
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Optional: For colored terminal output
+colorama>=0.4.6
+
+# API & Services
+Flask>=3.0.0
+flask-cors>=4.0.0
