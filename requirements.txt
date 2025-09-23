@@ -1,0 +1,14 @@
+# Core dependencies for simple_document_extractor.py
+# Minimal set of efficient libraries
+
+# PDF extraction - PyMuPDF is faster than PyPDF2/pdfplumber
+pymupdf>=1.23.0
+
+# Word document extraction
+python-docx>=0.8.11
+
+# PowerPoint extraction  
+python-pptx>=0.6.21
+
+# All dependencies can be installed with:
+# pip install -r requirements_simple.txt
