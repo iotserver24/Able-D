@@ -17,6 +17,7 @@ from .routes.teacher_upload import teacher_upload_bp
 from .routes.test_ui import test_ui_bp
 from .routes.ai import ai_bp
 from .routes.db_management import db_management_bp
+from .routes.students import students_bp
 
 
 def create_app() -> Flask:
@@ -36,7 +37,7 @@ def create_app() -> Flask:
     # Initialize Firebase Admin (if credentials provided)
     try:
         initialize_firebase_admin(app)
-    except Exception:
+    except (RuntimeError, ValueError):
         # Avoid crashing app startup if Firebase is not configured yet
         pass
 
@@ -51,6 +52,7 @@ def create_app() -> Flask:
     app.register_blueprint(test_ui_bp, url_prefix="/api")
     app.register_blueprint(ai_bp, url_prefix="/api")
     app.register_blueprint(db_management_bp, url_prefix="/api")
+    app.register_blueprint(students_bp, url_prefix="/api")
 
     return app
 
