@@ -9,6 +9,8 @@ from .routes.health import health_bp
 from .routes.extract_text import extract_text_bp
 from .routes.stt import stt_bp
 from .routes.tts import tts_bp
+from .routes.auth import auth_bp
+from .routes.subjects import subjects_bp
 
 
 def create_app() -> Flask:
@@ -27,6 +29,8 @@ def create_app() -> Flask:
     app.register_blueprint(extract_text_bp, url_prefix="/api")
     app.register_blueprint(stt_bp, url_prefix="/api")
     app.register_blueprint(tts_bp, url_prefix="/api")
+    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(subjects_bp, url_prefix="/api")
 
     return app
 
