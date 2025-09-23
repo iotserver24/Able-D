@@ -12,9 +12,6 @@ export function meta({}) {
 }
 
 export default function Home() {
-<<<<<<< HEAD
-  return <Teacher />;
-=======
   const { isAuthenticated, user } = useMockAuth();
   
   // If not authenticated, show login
@@ -33,5 +30,4 @@ export default function Home() {
       </AdaptiveLayout>
     </AdaptiveUIProvider>
   );
->>>>>>> 43f9fdd4112db2066d9a885810a3cec228fde365
 }
