@@ -12,6 +12,9 @@ export default [
   route("/student/dashboard", "routes/student.dashboard.jsx"),
   route("/teacher/dashboard", "routes/teacher.dashboard.jsx"),
   
+  // Redirect /dashboard to appropriate dashboard based on user role
+  route("/dashboard", "routes/dashboard-redirect.jsx"),
+  
   // Legacy routes (can be removed later)
   route("/login", "routes/students/studentAuth.jsx"),
   route("/teacher", "routes/teacher.jsx"),
