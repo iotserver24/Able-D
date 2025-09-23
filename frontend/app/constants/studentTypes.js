@@ -2,29 +2,33 @@ export const STUDENT_TYPES = {
   VISUALLY_IMPAIRED: {
     value: "visually_impaired",
     label: "Visually Impaired",
-    description: "For students with visual disabilities",
+    description: "Audio-first learning with descriptive content",
+    features: ["Text-to-Speech", "Audio Descriptions", "Voice Input"],
     icon: "eye",
-    color: "blue"
+    primaryColor: "blue"
   },
   HEARING_IMPAIRED: {
     value: "hearing_impaired",
     label: "Hearing Impaired",
-    description: "For students with hearing disabilities",
+    description: "Visual learning with structured text content",
+    features: ["Visual Descriptions", "Structured Text", "Sign Language Support"],
     icon: "ear",
-    color: "green"
+    primaryColor: "green"
   },
   SPEECH_IMPAIRED: {
     value: "speech_impaired",
     label: "Speech Impaired",
-    description: "For students with speech disabilities",
+    description: "Text-based interaction with clear written outputs",
+    features: ["Text Input", "Alternative Communication", "Written Assessments"],
     icon: "mic",
-    color: "purple"
+    primaryColor: "purple"
   },
-  SPECIAL_NEEDS: {
-    value: "special_needs",
-    label: "Special Needs",
-    description: "For students with other special requirements",
-    icon: "heart",
-    color: "pink"
+  SLOW_LEARNER: {
+    value: "slow_learner",
+    label: "Special Learning Needs",
+    description: "Simplified explanations with examples",
+    features: ["Simplified Content", "Step-by-Step Learning", "Visual Aids"],
+    icon: "book",
+    primaryColor: "orange"
   }
 };
