@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Microsoft Text-to-Speech (TTS) Script - Optimized Version
-Uses Azure Cognitive Services Speech SDK to convert text to speech.
-Optimizations: Lazy loading, caching, async operations, memory efficiency
+Microsoft Text-to-Speech (TTS) Script - Optimized for Education
+Uses Azure Cognitive Services Speech SDK with the best voice for educational content.
+Optimized for efficiency and clarity.
 """
 
 import os
@@ -10,11 +10,10 @@ import sys
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-from functools import lru_cache
-from contextlib import contextmanager
+from typing import Optional, Dict, Any
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import time
 
 # Lazy imports for heavy libraries
 _speech_sdk = None
@@ -39,74 +38,31 @@ def _ensure_dotenv():
         except ImportError:
             pass  # dotenv is optional
 
-# Try to import colorama for colored output
-try:
-    from colorama import init, Fore, Style
-    init(autoreset=True)  # Auto-reset colors after each print
-    COLORS_AVAILABLE = True
-except ImportError:
-    COLORS_AVAILABLE = False
-    # Define dummy classes for compatibility
-    class Fore:
-        GREEN = RED = YELLOW = CYAN = ''
-    class Style:
-        RESET_ALL = ''
-
-# Configure logging with lazy formatter
-class LazyLogFormatter(logging.Formatter):
-    """Lazy log formatter to avoid unnecessary string formatting."""
-    def format(self, record):
-        # Only format if the message will actually be logged
-        if record.levelno >= logging.getLogger().getEffectiveLevel():
-            return super().format(record)
-        return ''
-
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
-)
-logging.getLogger().handlers[0].setFormatter(
-    LazyLogFormatter('%(asctime)s - %(levelname)s - %(message)s')
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 
-class ColorPrinter:
-    """Centralized color printing utility."""
-    
-    @staticmethod
-    def success(message: str):
-        """Print success message with color if available."""
-        print(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
-    
-    @staticmethod
-    def error(message: str):
-        """Print error message with color if available."""
-        print(f"{Fore.RED}✗ {message}{Style.RESET_ALL}")
-        logger.error(message)
-    
-    @staticmethod
-    def info(message: str):
-        """Print info message with color if available."""
-        print(f"{Fore.CYAN}ℹ {message}{Style.RESET_ALL}")
-    
-    @staticmethod
-    def warning(message: str):
-        """Print warning message with color if available."""
-        print(f"{Fore.YELLOW}⚠ {message}{Style.RESET_ALL}")
-
-
 class MicrosoftTTS:
-    """Optimized Microsoft Text-to-Speech service wrapper."""
+    """Microsoft Text-to-Speech service optimized for educational content."""
     
-    # Class-level cache for voices
-    _voices_cache: Optional[List[Dict[str, Any]]] = None
-    _cache_region: Optional[str] = None
+    # Best voice for educational content - clear, professional, and engaging
+    EDUCATION_VOICE = "en-US-AriaNeural"
+    
+    # Optimal settings for educational content
+    EDUCATION_SETTINGS = {
+        "rate": "0.95",  # Slightly slower for clarity
+        "pitch": "default",
+        "volume": "default",
+        "style": "narration-professional"  # Professional narration style
+    }
     
     def __init__(self, api_key: Optional[str] = None, region: Optional[str] = None):
         """
-        Initialize the TTS service with lazy loading.
+        Initialize the TTS service optimized for educational use.
         
         Args:
             api_key: Azure Speech Service API key
@@ -126,10 +82,10 @@ class MicrosoftTTS:
         
         # Lazy initialization of speech config
         self._speech_config = None
-        self._default_voice = os.getenv('DEFAULT_VOICE', 'en-US-AriaNeural')
-        self._executor = ThreadPoolExecutor(max_workers=2)
+        self._synthesizer = None
+        self._executor = ThreadPoolExecutor(max_workers=1)  # Single thread for efficiency
         
-        logger.info(f"Initialized Microsoft TTS with region: {self.region}")
+        logger.info(f"Initialized Microsoft TTS for education with region: {self.region}")
     
     @property
     def speech_config(self):
@@ -140,81 +96,109 @@ class MicrosoftTTS:
                 subscription=self.api_key,
                 region=self.region
             )
-            self._speech_config.speech_synthesis_voice_name = self._default_voice
+            self._speech_config.speech_synthesis_voice_name = self.EDUCATION_VOICE
             
-            # Optimize speech config for performance
+            # Set high quality output format
+            self._speech_config.set_speech_synthesis_output_format(
+                speechsdk.SpeechSynthesisOutputFormat.Audio48Khz192KBitRateMonoMp3
+            )
+            
+            # Optimize for low latency
             self._speech_config.set_property(
-                speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "5000"
+                speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "3000"
             )
             self._speech_config.set_property(
-                speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1000"
+                speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500"
             )
         return self._speech_config
     
-    @lru_cache(maxsize=1)
-    def get_available_voices(self) -> List[Dict[str, Any]]:
+    @property
+    def synthesizer(self):
+        """Reuse synthesizer for efficiency."""
+        if self._synthesizer is None:
+            speechsdk = _lazy_import_speech_sdk()
+            self._synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+        return self._synthesizer
+    
+    def _build_ssml(self, text: str) -> str:
+        """Build SSML optimized for educational content."""
+        # Escape XML special characters
+        text = text.replace('&', '&amp;')
+        text = text.replace('<', '&lt;')
+        text = text.replace('>', '&gt;')
+        text = text.replace('"', '&quot;')
+        text = text.replace("'", '&apos;')
+        
+        # Build SSML with educational settings
+        ssml = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
+                   xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+            <voice name="{self.EDUCATION_VOICE}">
+                <mstts:express-as style="{self.EDUCATION_SETTINGS['style']}">
+                    <prosody rate="{self.EDUCATION_SETTINGS['rate']}">
+                        {text}
+                    </prosody>
+                </mstts:express-as>
+            </voice>
+        </speak>'''
+        
+        return ssml
+    
+    async def text_to_speech_async(
+        self,
+        text: str,
+        output_file: Optional[str] = None,
+        play_audio: bool = False
+    ) -> bool:
+        """Async version of text to speech conversion."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self._executor,
+            self.text_to_speech,
+            text, output_file, play_audio
+        )
+    
+    def text_to_speech(
+        self,
+        text: str,
+        output_file: Optional[str] = None,
+        play_audio: bool = False
+    ) -> bool:
         """
-        Get list of available voices with caching.
+        Convert text to speech optimized for educational content.
+        
+        Args:
+            text: Text to convert to speech
+            output_file: Path to save audio file (optional)
+            play_audio: Whether to play audio directly (optional)
         
         Returns:
-            List of voice information dictionaries
+            True if successful, False otherwise
         """
-        # Check class-level cache first
-        if self._voices_cache is not None and self._cache_region == self.region:
-            logger.debug("Returning cached voices list")
-            return self._voices_cache
-        
-        try:
-            speechsdk = _lazy_import_speech_sdk()
-            synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
-            
-            # Use async operation for better performance
-            result = synthesizer.get_voices_async().get()
-            
-            if result.reason == speechsdk.ResultReason.VoicesListRetrieved:
-                voices = []
-                for voice in result.voices:
-                    voice_info = {
-                        'name': voice.name,
-                        'locale': voice.locale,
-                        'gender': getattr(voice.gender, 'name', 'Unknown'),
-                        'display_name': getattr(voice, 'display_name', voice.name),
-                        'local_name': getattr(voice, 'local_name', voice.name),
-                        'voice_type': getattr(voice.voice_type, 'name', 'Neural') if hasattr(voice, 'voice_type') else 'Neural'
-                    }
-                    voices.append(voice_info)
-                
-                # Update class-level cache
-                MicrosoftTTS._voices_cache = voices
-                MicrosoftTTS._cache_region = self.region
-                
-                return voices
-            else:
-                logger.error(f"Failed to retrieve voices: {result.reason}")
-                return []
-        except Exception as e:
-            logger.error(f"Error getting available voices: {e}")
-            return []
-    
-    @contextmanager
-    def _get_synthesizer(self, output_file: Optional[str] = None, play_audio: bool = False):
-        """Context manager for speech synthesizer with proper resource cleanup."""
         speechsdk = _lazy_import_speech_sdk()
-        synthesizer = None
         
         try:
+            start_time = time.time()
+            
+            # Build SSML for educational content
+            ssml_text = self._build_ssml(text)
+            
+            # Configure output
             if output_file:
-                # Ensure output directory exists
-                output_path = Path(output_file)
+                # Fix: Ensure proper path handling with absolute paths
+                output_path = Path(output_file).resolve()
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 
-                audio_config = speechsdk.audio.AudioOutputConfig(filename=str(output_path))
+                # Convert to absolute path string for Azure SDK
+                output_file_str = str(output_path.absolute())
+                logger.info(f"Saving audio to: {output_file_str}")
+                
+                audio_config = speechsdk.audio.AudioOutputConfig(filename=output_file_str)
                 synthesizer = speechsdk.SpeechSynthesizer(
                     speech_config=self.speech_config,
                     audio_config=audio_config
                 )
             elif play_audio:
-                synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+                synthesizer = self.synthesizer
             else:
                 audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=False)
                 synthesizer = speechsdk.SpeechSynthesizer(
@@ -222,330 +206,117 @@ class MicrosoftTTS:
                     audio_config=audio_config
                 )
             
-            yield synthesizer
+            # Perform synthesis
+            logger.info("Starting speech synthesis...")
+            result = synthesizer.speak_ssml_async(ssml_text).get()
             
-        finally:
-            # Cleanup resources
-            if synthesizer:
-                del synthesizer
-    
-    async def text_to_speech_async(
-        self,
-        text: str,
-        output_file: Optional[str] = None,
-        voice_name: Optional[str] = None,
-        play_audio: bool = False
-    ) -> bool:
-        """
-        Async version of text to speech conversion for better performance.
-        
-        Args:
-            text: Text to convert to speech
-            output_file: Path to save audio file (optional)
-            voice_name: Voice to use (optional, uses default if not specified)
-            play_audio: Whether to play audio directly (optional)
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            self._executor,
-            self.text_to_speech,
-            text, output_file, voice_name, play_audio
-        )
-    
-    def text_to_speech(
-        self,
-        text: str,
-        output_file: Optional[str] = None,
-        voice_name: Optional[str] = None,
-        play_audio: bool = False
-    ) -> bool:
-        """
-        Convert text to speech with optimized resource handling.
-        
-        Args:
-            text: Text to convert to speech
-            output_file: Path to save audio file (optional)
-            voice_name: Voice to use (optional, uses default if not specified)
-            play_audio: Whether to play audio directly (optional)
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        speechsdk = _lazy_import_speech_sdk()
-        
-        try:
-            # Set voice if specified
-            if voice_name:
-                self.speech_config.speech_synthesis_voice_name = voice_name
-            
-            # Use context manager for proper resource cleanup
-            with self._get_synthesizer(output_file, play_audio) as synthesizer:
-                # Truncate log message for performance
-                log_text = text[:50] + ('...' if len(text) > 50 else '')
-                logger.info(f"Converting text to speech: '{log_text}'")
+            # Check result
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                elapsed_time = time.time() - start_time
+                logger.info(f"Speech synthesis completed in {elapsed_time:.2f} seconds")
                 
-                # Perform synthesis
-                result = synthesizer.speak_text_async(text).get()
+                if output_file:
+                    # Verify file was created
+                    if Path(output_file_str).exists():
+                        file_size = Path(output_file_str).stat().st_size
+                        print(f"✓ Audio saved to: {output_file_str} ({file_size:,} bytes)")
+                    else:
+                        logger.error(f"File was not created at: {output_file_str}")
+                        return False
+                if play_audio:
+                    print("✓ Audio played successfully")
+                return True
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation_details = result.cancellation_details
+                logger.error(f"Speech synthesis canceled: {cancellation_details.reason}")
+                if cancellation_details.error_details:
+                    logger.error(f"Error details: {cancellation_details.error_details}")
+                return False
+            else:
+                logger.error(f"Speech synthesis failed: {result.reason}")
+                return False
                 
-                # Check result
-                if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-                    if output_file:
-                        ColorPrinter.success(f"Audio saved to: {output_file}")
-                    if play_audio:
-                        ColorPrinter.success("Audio played successfully")
-                    return True
-                elif result.reason == speechsdk.ResultReason.Canceled:
-                    cancellation_details = result.cancellation_details
-                    ColorPrinter.error(f"Speech synthesis canceled: {cancellation_details.reason}")
-                    if cancellation_details.error_details:
-                        ColorPrinter.error(f"Error details: {cancellation_details.error_details}")
-                    return False
-                else:
-                    ColorPrinter.error(f"Speech synthesis failed: {result.reason}")
-                    return False
-                    
         except Exception as e:
-            ColorPrinter.error(f"Error during text-to-speech conversion: {e}")
+            logger.error(f"Error during text-to-speech conversion: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
-    def process_large_text(
+    def process_batch(
         self,
-        text_file: str,
+        texts: list[str],
         output_dir: str,
-        chunk_size: int = 5000,
-        voice_name: Optional[str] = None
+        prefix: str = "audio"
     ) -> bool:
-        """
-        Process large text files by splitting into chunks.
-        
-        Args:
-            text_file: Path to input text file
-            output_dir: Directory to save audio chunks
-            chunk_size: Maximum characters per chunk
-            voice_name: Voice to use
-        
-        Returns:
-            True if all chunks processed successfully
-        """
+        """Process multiple texts efficiently in batch."""
         try:
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
             
-            # Stream file for memory efficiency
-            with open(text_file, 'r', encoding='utf-8') as f:
-                chunk_num = 0
-                buffer = ""
-                
-                for line in f:
-                    buffer += line
-                    
-                    # Process chunk when it reaches the size limit
-                    if len(buffer) >= chunk_size:
-                        chunk_num += 1
-                        output_file = output_path / f"chunk_{chunk_num:04d}.wav"
-                        
-                        # Find last sentence boundary
-                        last_period = buffer.rfind('.')
-                        if last_period > 0:
-                            chunk_text = buffer[:last_period + 1]
-                            buffer = buffer[last_period + 1:]
-                        else:
-                            chunk_text = buffer
-                            buffer = ""
-                        
-                        ColorPrinter.info(f"Processing chunk {chunk_num}...")
-                        if not self.text_to_speech(chunk_text, str(output_file), voice_name):
-                            return False
-                
-                # Process remaining text
-                if buffer.strip():
-                    chunk_num += 1
-                    output_file = output_path / f"chunk_{chunk_num:04d}.wav"
-                    ColorPrinter.info(f"Processing final chunk {chunk_num}...")
-                    if not self.text_to_speech(buffer, str(output_file), voice_name):
-                        return False
+            success_count = 0
+            total_count = len(texts)
             
-            ColorPrinter.success(f"Processed {chunk_num} chunks successfully")
-            return True
+            for i, text in enumerate(texts, 1):
+                output_file = output_path / f"{prefix}_{i:04d}.mp3"
+                print(f"Processing {i}/{total_count}...")
+                
+                if self.text_to_speech(text, str(output_file)):
+                    success_count += 1
+                else:
+                    logger.warning(f"Failed to process text {i}")
+            
+            print(f"\n✓ Processed {success_count}/{total_count} texts successfully")
+            return success_count == total_count
             
         except Exception as e:
-            ColorPrinter.error(f"Error processing large text file: {e}")
+            logger.error(f"Error processing batch: {e}")
             return False
     
     def __del__(self):
         """Cleanup resources on deletion."""
         if hasattr(self, '_executor'):
             self._executor.shutdown(wait=False)
+        if hasattr(self, '_synthesizer') and self._synthesizer:
+            del self._synthesizer
 
 
-def list_voices(tts_service: MicrosoftTTS, filter_locale: Optional[str] = None):
-    """
-    List available voices with optional filtering.
-    
-    Args:
-        tts_service: TTS service instance
-        filter_locale: Optional locale filter (e.g., 'en-US')
-    """
-    print("\nFetching available voices...")
-    voices = tts_service.get_available_voices()
-    
-    if not voices:
-        ColorPrinter.error("Failed to retrieve voices")
-        return
-    
-    # Apply filter if specified
-    if filter_locale:
-        voices = [v for v in voices if v['locale'].startswith(filter_locale)]
-        print(f"\nFound {len(voices)} voices for locale '{filter_locale}':\n")
-    else:
-        print(f"\nFound {len(voices)} available voices:\n")
-    
-    if not voices:
-        ColorPrinter.warning(f"No voices found for locale '{filter_locale}'")
-        return
-    
-    # Group voices by locale
-    voices_by_locale = {}
-    for voice in voices:
-        locale = voice['locale']
-        if locale not in voices_by_locale:
-            voices_by_locale[locale] = []
-        voices_by_locale[locale].append(voice)
-    
-    # Display voices grouped by locale
-    for locale in sorted(voices_by_locale.keys()):
-        print(f"{Fore.YELLOW}{locale}:{Style.RESET_ALL}")
-        
-        for voice in sorted(voices_by_locale[locale], key=lambda x: x['name']):
-            gender_icon = "♀" if voice['gender'] == 'Female' else "♂"
-            voice_type_indicator = "🔊" if 'Neural' in voice['voice_type'] else "📢"
-            print(f"  {gender_icon} {voice_type_indicator} {voice['name']} - {voice['display_name']}")
-        print()
-
-
-def read_text_efficiently(file_path: str, max_size: int = 10 * 1024 * 1024) -> Optional[str]:
-    """
-    Read text from file with size limit and encoding detection.
-    
-    Args:
-        file_path: Path to text file
-        max_size: Maximum file size in bytes (default 10MB)
-    
-    Returns:
-        Text content or None if error
-    """
+def read_text_file(file_path: str) -> Optional[str]:
+    """Read text from file efficiently."""
     try:
-        file_size = os.path.getsize(file_path)
-        if file_size > max_size:
-            ColorPrinter.warning(f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds limit. Consider using --large-file mode.")
-            return None
-        
-        # Try different encodings
-        encodings = ['utf-8', 'utf-16', 'latin-1', 'cp1252']
-        for encoding in encodings:
-            try:
-                with open(file_path, 'r', encoding=encoding) as f:
-                    text = f.read().strip()
-                    ColorPrinter.info(f"Read text from file: {file_path} (encoding: {encoding})")
-                    return text
-            except UnicodeDecodeError:
-                continue
-        
-        ColorPrinter.error(f"Unable to decode file with any supported encoding")
-        return None
-        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            text = f.read().strip()
+            logger.info(f"Read {len(text)} characters from file: {file_path}")
+            return text
     except FileNotFoundError:
-        ColorPrinter.error(f"File not found: {file_path}")
+        logger.error(f"File not found: {file_path}")
         return None
     except Exception as e:
-        ColorPrinter.error(f"Error reading file: {e}")
+        logger.error(f"Error reading file: {e}")
         return None
 
 
 async def main_async():
     """Async main function for better performance."""
     parser = argparse.ArgumentParser(
-        description="Microsoft Text-to-Speech (TTS) - Optimized Version",
+        description="Microsoft Text-to-Speech optimized for Educational Content",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python tts.py "Hello, world!"
-  python tts.py "Hello, world!" -o output.wav
-  python tts.py "Hello, world!" -v en-US-JennyNeural -p
-  python tts.py --list-voices
-  python tts.py --list-voices --filter en-US
-  python tts.py -f input.txt -o output.wav
-  python tts.py --large-file book.txt --output-dir audio_chunks/
+  python tts.py "Welcome to today's lesson"              # Convert text
+  python tts.py "Hello, students!" -o lesson1.mp3        # Save to file
+  python tts.py -f lesson.txt -o lesson_audio.mp3        # Convert file
+  python tts.py --batch lessons/ -o audio/               # Batch process
         """
     )
     
-    parser.add_argument(
-        'text',
-        nargs='?',
-        help='Text to convert to speech'
-    )
-    
-    parser.add_argument(
-        '-f', '--file',
-        help='Read text from file instead of command line'
-    )
-    
-    parser.add_argument(
-        '-o', '--output',
-        help='Output audio file path (default: no file output)'
-    )
-    
-    parser.add_argument(
-        '-v', '--voice',
-        help='Voice name to use (e.g., en-US-AriaNeural)'
-    )
-    
-    parser.add_argument(
-        '-p', '--play',
-        action='store_true',
-        help='Play audio directly (requires speakers)'
-    )
-    
-    parser.add_argument(
-        '--list-voices',
-        action='store_true',
-        help='List all available voices'
-    )
-    
-    parser.add_argument(
-        '--filter',
-        help='Filter voices by locale (e.g., en-US, fr-FR)'
-    )
-    
-    parser.add_argument(
-        '--api-key',
-        help='Azure Speech Service API key (overrides environment variable)'
-    )
-    
-    parser.add_argument(
-        '--region',
-        help='Azure region (overrides environment variable)'
-    )
-    
-    parser.add_argument(
-        '--large-file',
-        help='Process large text file in chunks'
-    )
-    
-    parser.add_argument(
-        '--output-dir',
-        help='Output directory for audio chunks (used with --large-file)'
-    )
-    
-    parser.add_argument(
-        '--chunk-size',
-        type=int,
-        default=5000,
-        help='Characters per chunk for large files (default: 5000)'
-    )
+    parser.add_argument('text', nargs='?', help='Text to convert to speech')
+    parser.add_argument('-f', '--file', help='Read text from file')
+    parser.add_argument('-o', '--output', help='Output audio file path')
+    parser.add_argument('-p', '--play', action='store_true', help='Play audio directly')
+    parser.add_argument('--api-key', help='Azure Speech Service API key')
+    parser.add_argument('--region', help='Azure region')
+    parser.add_argument('--batch', help='Directory containing text files for batch processing')
+    parser.add_argument('--output-dir', help='Output directory for batch processing')
     
     args = parser.parse_args()
     
@@ -553,26 +324,28 @@ Examples:
         # Initialize TTS service
         tts_service = MicrosoftTTS(api_key=args.api_key, region=args.region)
         
-        # Handle list voices command
-        if args.list_voices:
-            list_voices(tts_service, args.filter)
-            return
-        
-        # Handle large file processing
-        if args.large_file:
-            output_dir = args.output_dir or './audio_chunks'
-            success = tts_service.process_large_text(
-                args.large_file,
-                output_dir,
-                args.chunk_size,
-                args.voice
-            )
+        # Handle batch processing
+        if args.batch:
+            output_dir = args.output_dir or './audio_output'
+            text_files = list(Path(args.batch).glob('*.txt'))
+            
+            if not text_files:
+                print("No text files found in the specified directory")
+                sys.exit(1)
+            
+            texts = []
+            for file_path in text_files:
+                text = read_text_file(str(file_path))
+                if text:
+                    texts.append(text)
+            
+            success = tts_service.process_batch(texts, output_dir)
             sys.exit(0 if success else 1)
         
         # Get text input
         text = None
         if args.file:
-            text = read_text_efficiently(args.file)
+            text = read_text_file(args.file)
             if text is None:
                 sys.exit(1)
         elif args.text:
@@ -582,22 +355,20 @@ Examples:
             sys.exit(1)
         
         if not text:
-            ColorPrinter.error("No text provided")
+            print("Error: No text provided")
             sys.exit(1)
         
-        # Set default output file if not specified but output directory exists
+        # Set default output file if not specified
         output_file = args.output
         if not output_file and not args.play:
-            output_dir = os.getenv('OUTPUT_DIR', './audio_output')
-            if output_dir:
-                Path(output_dir).mkdir(parents=True, exist_ok=True)
-                output_file = os.path.join(output_dir, 'output.wav')
+            # Default to audio_output directory
+            Path('./audio_output').mkdir(parents=True, exist_ok=True)
+            output_file = './audio_output/output.mp3'
         
-        # Convert text to speech (use async version for better performance)
+        # Convert text to speech
         success = await tts_service.text_to_speech_async(
             text=text,
             output_file=output_file,
-            voice_name=args.voice,
             play_audio=args.play
         )
         
@@ -605,31 +376,22 @@ Examples:
             sys.exit(1)
             
     except ValueError as e:
-        ColorPrinter.error(f"Configuration error: {e}")
+        print(f"Configuration error: {e}")
         print("\nPlease ensure you have:")
-        print("1. Created a .env file with your Azure credentials")
-        print("2. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION")
-        print("3. Or pass credentials via --api-key and --region arguments")
+        print("1. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION environment variables")
+        print("2. Or pass credentials via --api-key and --region arguments")
         sys.exit(1)
     except KeyboardInterrupt:
-        ColorPrinter.warning("\nOperation cancelled by user")
+        print("\nOperation cancelled by user")
         sys.exit(0)
     except Exception as e:
-        ColorPrinter.error(f"Unexpected error: {e}")
-        logger.exception("Unexpected error occurred")
+        logger.error(f"Unexpected error: {e}")
         sys.exit(1)
 
 
 def main():
-    """Main entry point with async support."""
-    # Check if event loop is already running (e.g., in Jupyter)
-    try:
-        loop = asyncio.get_running_loop()
-        # If we're here, loop is running, use create_task
-        loop.create_task(main_async())
-    except RuntimeError:
-        # No loop running, use asyncio.run
-        asyncio.run(main_async())
+    """Main entry point."""
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":

@@ -10,11 +10,14 @@ python-docx>=0.8.11
 # PowerPoint extraction  
 python-pptx>=0.6.21
 
-# Azure Speech Services (for TTS and STT)
-azure-cognitiveservices-speech>=1.32.0
+# Azure Speech Services (for TTS and STT) - Latest version for HD voices
+azure-cognitiveservices-speech>=1.34.0
 
 # Environment variables
 python-dotenv>=1.0.0
+
+# Optional: For colored terminal output
+colorama>=0.4.6
 
 # All dependencies can be installed with:
 # pip install -r requirements.txt
