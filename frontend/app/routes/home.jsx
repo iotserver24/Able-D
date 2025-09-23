@@ -12,27 +12,6 @@ export function meta({}) {
 }
 
 export default function Home() {
-<<<<<<< HEAD
-  const { isAuthenticated, user } = useMockAuth();
-  
-  // If not authenticated, show login
-  if (!isAuthenticated) {
-    return <StudentAuth />;
-  }
-  
-  // If authenticated, show dashboard with adaptive UI
-  return (
-    <AdaptiveUIProvider studentType={user?.studentType}>
-      <AdaptiveLayout>
-        <Dashboard 
-          sessionId={user?.id || 'default-session'} 
-          studentType={user?.studentType} 
-        />
-      </AdaptiveLayout>
-    </AdaptiveUIProvider>
-  );
-}
-=======
   const { isAuthenticated, user } = useMockAuth();
   
   // If not authenticated, show login
@@ -52,4 +31,3 @@ export default function Home() {
     </AdaptiveUIProvider>
   );
 }
->>>>>>> e46cc4d8f33ce387cca621fbb360463db8219edf
