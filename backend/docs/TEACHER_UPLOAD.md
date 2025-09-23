@@ -1,6 +1,6 @@
 # Teacher Upload API
 
-Endpoint to allow teachers to upload notes via a document or audio file. The backend extracts/transcribes text and stores it in MongoDB under the school/class/subject/topic hierarchy and links the uploader.
+Endpoint to allow teachers to upload notes via a document, audio file, or direct text. The backend extracts/transcribes or uses provided text and stores it in MongoDB under the school/class/subject/topic hierarchy and links the uploader.
 
 ## Auth
 - JWT required
@@ -16,13 +16,15 @@ Endpoint to allow teachers to upload notes via a document or audio file. The bac
 - `topic` or `name` (string) – required (topic title)
 - `file` (file) – document upload (PDF/DOCX/PPTX/etc.)
 - OR `audio` (file) – audio upload (WAV/MP3 etc.)
+- OR `text` (string) – direct base text to store (no extraction/STT)
 - Optional when audio: `language` (string, default `en-US`)
 
-Only one of `file` or `audio` must be provided.
+Only one of `file`, `audio`, or `text` must be provided.
 
 ## Behavior
 - If `file` is provided: process via existing extractor (same as `/api/extract-text`)
 - If `audio` is provided: process via existing STT (same as `/api/stt`), converting to WAV PCM16 mono 16k if needed
+- If `text` is provided: use it directly as base text (no extraction/STT)
 - Store resulting base `text` with metadata in `notes` collection
 - Post-processing (automatic):
   - Generate a Dyslexie-adapted text variant using AI (`studentType = dyslexie`)
@@ -38,7 +40,7 @@ Only one of `file` or `audio` must be provided.
   "topic": "Algebra",
   "text": "...extracted/transcribed text...",
   "uploadedBy": "t1@example.com",
-  "sourceType": "document",
+  "sourceType": "document|audio|text",
   "originalFilename": "file.pdf",
   "variants": {
     "dyslexie": "...AI-adapted text for dyslexie...",
@@ -87,6 +89,17 @@ curl -X POST "http://localhost:5000/api/teacher/upload" \
   -F topic=Biology \
   -F language=en-US \
   -F audio=@/path/to/audio.wav
+```
+
+cURL (direct text):
+```bash
+curl -X POST "http://localhost:5000/api/teacher/upload" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F school=ABC \
+  -F class=10 \
+  -F subject=Math \
+  -F topic=Algebra \
+  -F text='Here is the lesson text directly without a file.'
 ```
 
 ## Implementation Notes

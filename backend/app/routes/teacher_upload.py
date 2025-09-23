@@ -45,38 +45,51 @@ def teacher_upload():
     if not topic:
         return jsonify({"error": "topic is required"}), 400
 
-    # Accept either 'file' (document) or 'audio'
+    # Accept exactly one of: 'file' (document), 'audio', or 'text' (direct text)
     file = request.files.get("file")
     audio = request.files.get("audio")
-    if not file and not audio:
-        return jsonify({"error": "Either 'file' or 'audio' must be provided"}), 400
-    if file and audio:
-        return jsonify({"error": "Provide only one of 'file' or 'audio'"}), 400
+    direct_text = (request.form.get("text") or "").strip()
+
+    provided_count = sum([
+        1 if file else 0,
+        1 if audio else 0,
+        1 if direct_text else 0,
+    ])
+    if provided_count == 0:
+        return jsonify({"error": "Provide exactly one of 'file', 'audio', or 'text'"}), 400
+    if provided_count > 1:
+        return jsonify({"error": "Provide only one of 'file', 'audio', or 'text'"}), 400
 
     text: str = ""
     source_type: str
     original_filename: str | None = None
 
-    with TemporaryDirectory() as tmpdir:
-        if file:
-            original_filename = file.filename
-            tmp_path = Path(tmpdir) / file.filename
-            file.save(str(tmp_path))
-            extractor = get_extractor()
-            results = extractor.extract(tmp_path)
-            text = next(iter(results.values()), "")
-            source_type = "document"
-        else:
-            original_filename = audio.filename if audio else None
-            tmp_path = Path(tmpdir) / (audio.filename if audio else "audio")
-            audio.save(str(tmp_path))
-            path_to_use, _ = ensure_wav_pcm16_mono_16k(tmp_path)
-            stt_client = get_stt_client(language=(request.form.get("language") or "en-US"))
-            success, result = stt_client.transcribe(str(path_to_use))
-            if not success:
-                return jsonify({"error": result}), 400
-            text = result
-            source_type = "audio"
+    # Resolve base text depending on source
+    if direct_text:
+        text = direct_text
+        source_type = "text"
+        original_filename = None
+    else:
+        with TemporaryDirectory() as tmpdir:
+            if file:
+                original_filename = file.filename
+                tmp_path = Path(tmpdir) / file.filename
+                file.save(str(tmp_path))
+                extractor = get_extractor()
+                results = extractor.extract(tmp_path)
+                text = next(iter(results.values()), "")
+                source_type = "document"
+            else:
+                original_filename = audio.filename if audio else None
+                tmp_path = Path(tmpdir) / (audio.filename if audio else "audio")
+                audio.save(str(tmp_path))
+                path_to_use, _ = ensure_wav_pcm16_mono_16k(tmp_path)
+                stt_client = get_stt_client(language=(request.form.get("language") or "en-US"))
+                success, result = stt_client.transcribe(str(path_to_use))
+                if not success:
+                    return jsonify({"error": result}), 400
+                text = result
+                source_type = "audio"
 
     # Post-processing: generate dyslexie variant, synthesize TTS, and upload MP3 to Catbox
     variants = {}
