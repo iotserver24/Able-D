@@ -7,6 +7,8 @@ import { NotesList } from '../notes/NotesList';
 import { useAdaptiveUI } from '../../../contexts/AdaptiveUIContext';
 import { STUDENT_TYPES } from '../../../constants/studentTypes';
 import { useMockAuth } from '../../../constants/MockAuthContext';
+import { useTTSContext } from '../../../contexts/TTSContext';
+import { TTSController } from '../../../components/tts/TTSController';
 
 export function Dashboard({ sessionId, studentType }) {
   const [notes, setNotes] = useState([]);
@@ -14,12 +16,29 @@ export function Dashboard({ sessionId, studentType }) {
   const [error, setError] = useState(null);
   const { uiSettings } = useAdaptiveUI();
   const { user, logout } = useMockAuth();
+  const { 
+    isEnabled: ttsEnabled, 
+    readPageContent, 
+    announceNavigation,
+    announceSuccess,
+    announceError,
+    speak 
+  } = useTTSContext();
   
   const studentConfig = Object.values(STUDENT_TYPES).find(
     type => type.value === studentType
   );
 
   useEffect(() => {
+    // Announce page navigation for TTS users
+    if (ttsEnabled && studentType === 'visually_impaired') {
+      announceNavigation('Dashboard', 'Your Adaptive Learning Dashboard');
+      // Auto-read page content after a short delay
+      setTimeout(() => {
+        readPageContent();
+      }, 1500);
+    }
+    
     // Simulate loading notes - in production, this would fetch from API
     setLoading(true);
     setTimeout(() => {
@@ -27,8 +46,13 @@ export function Dashboard({ sessionId, studentType }) {
         { id: 1, title: 'Welcome Note', content: 'Welcome to your adaptive learning dashboard!' },
       ]);
       setLoading(false);
+      
+      // Announce when notes are loaded
+      if (ttsEnabled) {
+        announceSuccess('Your notes have been loaded');
+      }
     }, 1000);
-  }, [sessionId]);
+  }, [sessionId, ttsEnabled, studentType]);
 
   const loadNotes = async () => {
     try {
@@ -50,10 +74,31 @@ export function Dashboard({ sessionId, studentType }) {
 
   const handleUploadComplete = (result) => {
     loadNotes();
+    if (ttsEnabled) {
+      announceSuccess('Document uploaded successfully');
+    }
   };
 
   const handleRecordingComplete = (result) => {
     loadNotes();
+    if (ttsEnabled) {
+      announceSuccess('Audio recording saved');
+    }
+  };
+
+  // Handle TTS reading for buttons
+  const handleReadAloud = () => {
+    if (ttsEnabled) {
+      readPageContent();
+    } else {
+      // If TTS is not enabled through context, use browser's speech synthesis directly
+      const mainContent = document.querySelector('.dashboard-content') || document.querySelector('main');
+      if (mainContent && window.speechSynthesis) {
+        const text = mainContent.textContent;
+        const utterance = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(utterance);
+      }
+    }
   };
 
   // Render different UI based on student type
@@ -73,12 +118,25 @@ export function Dashboard({ sessionId, studentType }) {
   };
 
   const renderVisuallyImpairedDashboard = () => (
-    <div className="space-y-8">
+    <div className="space-y-8 dashboard-content" role="main" aria-label="Audio Learning Dashboard">
       {/* Large, high-contrast header */}
       <div className="bg-blue-900 text-white p-6 rounded-xl">
         <h1 className="text-3xl font-bold mb-2">Audio Learning Dashboard</h1>
         <p className="text-xl">Voice-enabled interface for {user?.name || 'Student'}</p>
       </div>
+
+      {/* TTS Information Banner */}
+      {ttsEnabled && (
+        <div className="bg-green-100 border-2 border-green-500 rounded-lg p-4" role="status" aria-live="polite">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔊</span>
+            <div>
+              <p className="font-semibold text-green-800">Text-to-Speech is Active</p>
+              <p className="text-sm text-green-700">Use Alt+R to read page, Alt+S to stop, Alt+P to pause/resume</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Voice Controls Section */}
       <div className="bg-white rounded-xl shadow-lg p-8 border-4 border-blue-500">
@@ -88,10 +146,17 @@ export function Dashboard({ sessionId, studentType }) {
             sessionId={sessionId} 
             onRecordingComplete={handleRecordingComplete} 
           />
-          <button className="p-6 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300">
+          <button 
+            className="p-6 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300"
+            aria-label="Start voice command"
+          >
             🎤 Start Voice Command
           </button>
-          <button className="p-6 bg-green-600 text-white text-xl rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300">
+          <button 
+            onClick={handleReadAloud}
+            className="p-6 bg-green-600 text-white text-xl rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300"
+            aria-label="Read content aloud"
+          >
             🔊 Read Content Aloud
           </button>
         </div>
@@ -102,6 +167,9 @@ export function Dashboard({ sessionId, studentType }) {
         <h2 className="text-2xl font-bold mb-6">Your Audio Notes</h2>
         <NotesList notes={notes} studentType={studentType} />
       </div>
+
+      {/* TTS Controller - floating controls */}
+      {ttsEnabled && <TTSController position="bottom-right" />}
     </div>
   );
 
