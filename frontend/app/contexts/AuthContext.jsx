@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const result = await authService.loginStudent(email, password);
+      const result = await authService.loginStudent({ email, password });
       
       if (result.success) {
         setUser(result.data.user);
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const result = await authService.loginTeacher(email, password);
+      const result = await authService.loginTeacher({ email, password });
       
       if (result.success) {
         setUser(result.data.user);
