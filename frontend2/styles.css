@@ -103,6 +103,7 @@ fieldset { border: 1px dashed rgba(255,255,255,0.16); border-radius: 10px; paddi
   font-weight: 600;
   cursor: pointer;
 }
+.form-actions .secondary { background: #ffffff; color: var(--text); border: 1px solid var(--border); }
 .form-actions button:disabled { opacity: .6; cursor: not-allowed; }
 
 .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }

@@ -6,7 +6,8 @@
     student: document.getElementById('student-section'),
     teacher: document.getElementById('teacher-section'),
     notes: document.getElementById('notes-section'),
-    learn: document.getElementById('learn-section')
+    learn: document.getElementById('learn-section'),
+    home: document.getElementById('home-section')
   };
   const statusEls = {
     student: document.getElementById('student-status'),
@@ -26,7 +27,7 @@
     sections[key].classList.remove('hidden');
     // active tab highlight
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const map = { student: 'nav-student', teacher: 'nav-teacher', notes: 'nav-notes', learn: 'nav-learn' };
+    const map = { home: 'nav-home', student: 'nav-student', teacher: 'nav-teacher', notes: 'nav-notes', learn: 'nav-learn' };
     const btnId = map[key];
     if (btnId) {
       const btn = document.getElementById(btnId);
@@ -37,6 +38,11 @@
   document.getElementById('nav-teacher').addEventListener('click', () => showSection('teacher'));
   document.getElementById('nav-notes').addEventListener('click', () => showSection('notes'));
   document.getElementById('nav-learn').addEventListener('click', () => showSection('learn'));
+  document.getElementById('nav-home').addEventListener('click', () => showSection('home'));
+
+  // Home role shortcuts
+  document.getElementById('home-student')?.addEventListener('click', () => showSection('student'));
+  document.getElementById('home-teacher')?.addEventListener('click', () => showSection('teacher'));
 
   // Helpers
   async function apiJson(path, options = {}) {
@@ -158,6 +164,37 @@
       renderNote(data.note);
     } catch (err) {
       setStatus(statusEls.upload, err.message || 'Upload failed');
+    }
+  });
+
+  // Teacher: Load subjects helper
+  document.getElementById('btn-load-subjects').addEventListener('click', async () => {
+    if (!teacherToken && !studentToken) {
+      setStatus(statusEls.upload, 'Login first (student or teacher) to load subjects');
+      return;
+    }
+    const school = document.querySelector('input[name="school"]').value || (currentStudent?.school || '');
+    const className = document.querySelector('input[name="class"]').value || (currentStudent?.class || '');
+    if (!school || !className) {
+      setStatus(statusEls.upload, 'Enter school and class to load subjects');
+      return;
+    }
+    try {
+      const res = await fetch(`${cfg.apiBaseUrl}/subjects?school=${encodeURIComponent(school)}&class=${encodeURIComponent(className)}`, {
+        headers: { 'Authorization': `Bearer ${teacherToken || studentToken}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load subjects');
+      const list = document.getElementById('subjects-list');
+      list.innerHTML = '';
+      (data.items || []).forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.subjectName;
+        list.appendChild(opt);
+      });
+      setStatus(statusEls.upload, 'Subjects loaded', true);
+    } catch (err) {
+      setStatus(statusEls.upload, err.message || 'Failed to load subjects');
     }
   });
 
@@ -293,7 +330,7 @@
   });
 
   // Default view
-  showSection('student');
+  showSection('home');
 })();
 
 

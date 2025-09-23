@@ -13,6 +13,7 @@
     <header class="app-header">
       <h1>Able-D</h1>
       <nav class="nav">
+        <button id="nav-home" class="nav-btn" aria-controls="home-section">Home</button>
         <button id="nav-student" class="nav-btn" aria-controls="student-section">Student</button>
         <button id="nav-teacher" class="nav-btn" aria-controls="teacher-section">Teacher</button>
         <button id="nav-notes" class="nav-btn" aria-controls="notes-section">Upload</button>
@@ -25,6 +26,16 @@
     </header>
 
     <main class="container">
+      <!-- Home / Role Selection -->
+      <section id="home-section" class="card" aria-labelledby="nav-home">
+        <h2>Welcome to Able-D</h2>
+        <p class="hint">Choose how you want to sign in to continue.</p>
+        <div class="form-actions">
+          <button id="home-student">I'm a Student</button>
+          <button id="home-teacher">I'm a Teacher</button>
+        </div>
+      </section>
+
       <!-- Student Auth -->
       <section id="student-section" class="card hidden" aria-labelledby="nav-student">
         <h2>Student</h2>
@@ -93,7 +104,7 @@
             </div>
             <div class="form-row">
               <label>Subject
-                <input type="text" name="subject" required>
+                <input type="text" name="subject" list="subjects-list" required>
               </label>
             </div>
             <div class="form-row">
@@ -101,6 +112,10 @@
                 <input type="text" name="topic" required>
               </label>
             </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="btn-load-subjects" class="secondary">Load Subjects</button>
           </div>
 
           <fieldset>
@@ -185,6 +200,8 @@
         </div>
       </article>
     </template>
+
+    <datalist id="subjects-list"></datalist>
 
     <script src="config.js"></script>
     <script src="app.js" defer></script>
