@@ -9,7 +9,6 @@ export default [
   route("/teacher", "routes/teacher.jsx"),
   route("/students", "students/students.jsx"),
   
-
     // TODO: this below things is for example only, you can remove it
 
     // Additional routes - you can add as many as you need
