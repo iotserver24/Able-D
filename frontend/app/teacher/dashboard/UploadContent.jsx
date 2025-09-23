@@ -1,5 +1,7 @@
 // app/teacher/dashboard/UploadContent.jsx
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import teacherService from "../../services/teacher.service";
+import authService from "../../services/auth.service";
 
 // Inlined CSS with the text-align fix
 const inlinedStyles = `
@@ -38,31 +40,86 @@ const inlinedStyles = `
 export default function UploadContent({ darkMode }) {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [subjectOptions, setSubjectOptions] = useState([{ value: "", label: "Select Subject" }]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const fileInputRef = useRef(null);
 
   const classOptions = useMemo(
     () => [
-      { value: "", label: "Select Class" }, { value: "6", label: "Class 6" }, { value: "7", label: "Class 7" }, { value: "8", label: "Class 8" }, { value: "9", label: "Class 9" }, { value: "10", label: "Class 10" }, { value: "11", label: "Class 11" }, { value: "12", label: "Class 12" },
-    ],
-    []
-  );
-
-  const subjectOptions = useMemo(
-    () => [
-      { value: "", label: "Select Subject" }, { value: "math", label: "Mathematics" }, { value: "science", label: "Science" }, { value: "english", label: "English" }, { value: "social", label: "Social Studies" }, { value: "hindi", label: "Hindi" }, { value: "other", label: "Other" },
+      { value: "", label: "Select Class" }, 
+      { value: "6", label: "Class 6" }, 
+      { value: "7", label: "Class 7" }, 
+      { value: "8", label: "Class 8" }, 
+      { value: "9", label: "Class 9" }, 
+      { value: "10", label: "Class 10" }, 
+      { value: "11", label: "Class 11" }, 
+      { value: "12", label: "Class 12" },
     ],
     []
   );
 
   const allowedExtensions = useMemo(
-    () => new Set([".doc", ".docx", ".ppt", ".pptx", ".pdf"]),
+    () => new Set([".doc", ".docx", ".ppt", ".pptx", ".pdf", ".mp3", ".wav", ".m4a"]),
     []
   );
+
+  // Fetch subjects when class is selected
+  useEffect(() => {
+    if (selectedClass) {
+      fetchSubjects();
+    } else {
+      setSubjectOptions([{ value: "", label: "Select Subject" }]);
+      setSelectedSubject("");
+    }
+  }, [selectedClass]);
+
+  const fetchSubjects = async () => {
+    setIsLoadingSubjects(true);
+    try {
+      const school = authService.getCurrentSchool() || 'DemoSchool';
+      const result = await teacherService.getSubjects(school, selectedClass);
+      
+      if (result.success && result.data.length > 0) {
+        const options = [
+          { value: "", label: "Select Subject" },
+          ...result.data
+        ];
+        setSubjectOptions(options);
+      } else {
+        // Fallback to default subjects if API fails or returns empty
+        setSubjectOptions([
+          { value: "", label: "Select Subject" },
+          { value: "math", label: "Mathematics" },
+          { value: "science", label: "Science" },
+          { value: "english", label: "English" },
+          { value: "social", label: "Social Studies" },
+          { value: "hindi", label: "Hindi" },
+          { value: "other", label: "Other" },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      // Fallback to default subjects
+      setSubjectOptions([
+        { value: "", label: "Select Subject" },
+        { value: "math", label: "Mathematics" },
+        { value: "science", label: "Science" },
+        { value: "english", label: "English" },
+        { value: "social", label: "Social Studies" },
+        { value: "hindi", label: "Hindi" },
+        { value: "other", label: "Other" },
+      ]);
+    } finally {
+      setIsLoadingSubjects(false);
+    }
+  };
 
   function getFileExtension(name) {
     const lastDot = name.lastIndexOf(".");
@@ -72,10 +129,11 @@ export default function UploadContent({ darkMode }) {
   function validateBeforeSubmit() {
     if (!selectedClass) return "Please select a class.";
     if (!selectedSubject) return "Please select a subject.";
+    if (!selectedTopic) return "Please enter a topic.";
     if (!selectedFile) return "Please choose a file to upload.";
     const ext = getFileExtension(selectedFile.name);
     if (!allowedExtensions.has(ext))
-      return "Invalid file type. Allowed: .doc, .docx, .ppt, .pptx, .pdf";
+      return "Invalid file type. Allowed: .doc, .docx, .ppt, .pptx, .pdf, .mp3, .wav, .m4a";
     return "";
   }
 
@@ -129,22 +187,76 @@ export default function UploadContent({ darkMode }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
     setAudioUrl("");
+    
     const validation = validateBeforeSubmit();
     if (validation) {
       setErrorMessage(validation);
       return;
     }
+    
     try {
       setIsSubmitting(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const mockBlob = new Blob([], { type: 'audio/mpeg' });
-      setAudioUrl(URL.createObjectURL(mockBlob));
+      
+      // Get school from auth service
+      const school = authService.getCurrentSchool() || 'DemoSchool';
+      
+      // Call the real upload API
+      const result = await teacherService.uploadFile(
+        selectedFile,
+        school,
+        selectedClass,
+        selectedSubject,
+        selectedTopic
+      );
+      
+      if (result.success) {
+        setSuccessMessage("File uploaded successfully! Processing audio...");
+        
+        // If the backend returns an audio URL, use it
+        if (result.data && result.data.audioUrl) {
+          setAudioUrl(result.data.audioUrl);
+        } else {
+          // Mock audio for now if backend doesn't return audio yet
+          const mockBlob = new Blob([], { type: 'audio/mpeg' });
+          setAudioUrl(URL.createObjectURL(mockBlob));
+        }
+        
+        // Clear form after successful upload
+        setTimeout(() => {
+          handleReset();
+          setSuccessMessage("Upload complete! You can upload another file.");
+        }, 3000);
+      } else {
+        setErrorMessage(result.error || "Failed to upload file. Please try again.");
+      }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
+      console.error('Upload error:', err);
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+
+  function handleReset() {
+    setSelectedClass("");
+    setSelectedSubject("");
+    setSelectedFile(null);
+    setErrorMessage("");
+    setAudioUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleReset() {
+    setSelectedClass("");
+    setSelectedSubject("");
+    setSelectedTopic("");
+    setSelectedFile(null);
+    setErrorMessage("");
+    setSuccessMessage("");
+    setAudioUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function handleReset() {
@@ -254,6 +366,26 @@ export default function UploadContent({ darkMode }) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="group">
+              <label className={`block text-sm font-semibold mb-3 transition-colors ${
+                darkMode ? "text-gray-200" : "text-gray-700"
+              }`}>
+                Topic
+              </label>
+              <input
+                type="text"
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                placeholder="Enter the topic (e.g., Photosynthesis, World War II)"
+                className={`w-full pl-6 pr-6 py-4 rounded-full border-2 transition-all duration-300 focus:outline-none focus:scale-[1.02] ${
+                  darkMode
+                    ? "bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-purple-400"
+                    : "bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-400"
+                } backdrop-blur-sm`}
+                required
+              />
             </div>
 
             <div className="group">

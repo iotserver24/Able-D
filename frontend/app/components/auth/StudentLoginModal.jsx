@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { useAuth } from "../../contexts/AuthContext";
 
 export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
-  const { loginStudent } = useAuth();
+  const { 
+    loginStudent, 
+    error: authError,
+    clearError 
+  } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -14,6 +18,12 @@ export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     rememberMe: false,
   });
 
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ 
@@ -21,6 +31,7 @@ export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
       [name]: type === 'checkbox' ? checked : value 
     });
     setError("");
+    clearError();
   };
 
   const validateForm = () => {
@@ -44,10 +55,11 @@ export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     
     setLoading(true);
     setError("");
+    clearError();
     
     try {
       // Login the student using the context function
-      const response = await loginStudent(formData.email, formData.password);
+      const response = await loginStudent(formData);
       
       if (response.success) {
         // Login successful, user is already logged in by the context
@@ -55,11 +67,11 @@ export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
         const userData = {
           ...response.user,
           role: 'student',
-          studentType: response.user.disability_type || response.user.studentType
+          studentType: response.user?.disability_type || response.user?.studentType || 'general'
         };
         
         // Check if student needs TTS (for visually impaired)
-        if (userData.studentType === 'visually_impaired') {
+        if (userData.studentType === 'visually_impaired' || userData.studentType === 'vision') {
           // TTS will be handled by the dashboard component
         }
         
@@ -221,3 +233,5 @@ export function StudentLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     </div>
   );
 }
+
+export default StudentLoginModal;

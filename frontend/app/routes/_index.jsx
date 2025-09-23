@@ -22,8 +22,10 @@ export default function Index() {
   const [userType, setUserType] = useState(null);
 
   const handleOpenLogin = () => {
+    // console.log('Login button clicked');
     setShowLoginModal(true);
     setCurrentModal('choose-type');
+    // console.log('Modal state:', { showLoginModal: true, currentModal: 'choose-type' });
   };
 
   const handleUserTypeSelect = (type) => {
@@ -89,12 +91,14 @@ export default function Index() {
           </p>
 
           {/* Login Button */}
-          <Button
-            onClick={handleOpenLogin}
+          <button
+            onClick={() => {
+              handleOpenLogin();
+            }}
             className="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg transform transition hover:scale-105"
           >
             Login / Register
-          </Button>
+          </button>
         </div>
 
         {/* Features Section */}
@@ -136,51 +140,53 @@ export default function Index() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal
-          currentModal={currentModal}
-          userType={userType}
-          onUserTypeSelect={handleUserTypeSelect}
-          onLoginChoice={handleLoginChoice}
-          onRegisterChoice={handleRegisterChoice}
-          onClose={handleCloseModal}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
+        <>
+          <LoginModal
+            currentModal={currentModal}
+            userType={userType}
+            onUserTypeSelect={handleUserTypeSelect}
+            onLoginChoice={handleLoginChoice}
+            onRegisterChoice={handleRegisterChoice}
+            onClose={handleCloseModal}
+            onLoginSuccess={handleLoginSuccess}
+          />
 
-      {/* Student Registration Modal */}
-      {currentModal === 'student-register' && (
-        <StudentRegistrationModal
-          onClose={handleCloseModal}
-          onSuccess={handleLoginSuccess}
-          onSwitchToLogin={() => setCurrentModal('student-login')}
-        />
-      )}
+          {/* Student Registration Modal */}
+          {currentModal === 'student-register' && (
+            <StudentRegistrationModal
+              onClose={handleCloseModal}
+              onSuccess={handleLoginSuccess}
+              onSwitchToLogin={() => setCurrentModal('student-login')}
+            />
+          )}
 
-      {/* Teacher Registration Modal */}
-      {currentModal === 'teacher-register' && (
-        <TeacherRegistrationModal
-          onClose={handleCloseModal}
-          onSuccess={handleLoginSuccess}
-          onSwitchToLogin={() => setCurrentModal('teacher-login')}
-        />
-      )}
+          {/* Teacher Registration Modal */}
+          {currentModal === 'teacher-register' && (
+            <TeacherRegistrationModal
+              onClose={handleCloseModal}
+              onSuccess={handleLoginSuccess}
+              onSwitchToLogin={() => setCurrentModal('teacher-login')}
+            />
+          )}
 
-      {/* Student Login Modal */}
-      {currentModal === 'student-login' && (
-        <StudentLoginModal
-          onClose={handleCloseModal}
-          onSuccess={handleLoginSuccess}
-          onSwitchToRegister={() => setCurrentModal('student-register')}
-        />
-      )}
+          {/* Student Login Modal */}
+          {currentModal === 'student-login' && (
+            <StudentLoginModal
+              onClose={handleCloseModal}
+              onSuccess={handleLoginSuccess}
+              onSwitchToRegister={() => setCurrentModal('student-register')}
+            />
+          )}
 
-      {/* Teacher Login Modal */}
-      {currentModal === 'teacher-login' && (
-        <TeacherLoginModal
-          onClose={handleCloseModal}
-          onSuccess={handleLoginSuccess}
-          onSwitchToRegister={() => setCurrentModal('teacher-register')}
-        />
+          {/* Teacher Login Modal */}
+          {currentModal === 'teacher-login' && (
+            <TeacherLoginModal
+              onClose={handleCloseModal}
+              onSuccess={handleLoginSuccess}
+              onSwitchToRegister={() => setCurrentModal('teacher-register')}
+            />
+          )}
+        </>
       )}
     </div>
   );

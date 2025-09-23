@@ -9,6 +9,7 @@ import {
   useRouteError,
 } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext";
+import { TTSProvider } from "./contexts/TTSContext";
 import "./app.css";
 
 export function Layout({ children }) {
@@ -33,7 +34,9 @@ export default function App() {
   // Using Real Authentication with Backend API
   return (
     <AuthProvider>
-      <Outlet />
+      <TTSProvider>
+        <Outlet />
+      </TTSProvider>
     </AuthProvider>
   );
 }

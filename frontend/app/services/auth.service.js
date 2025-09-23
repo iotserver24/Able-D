@@ -1,6 +1,7 @@
 /**
  * Authentication Service
  * Handles all authentication API calls for students and teachers
+ * Updated to match backend API specification exactly
  */
 
 import { API_BASE_URL } from '../config/api.config';
@@ -26,6 +27,7 @@ class AuthService {
 
   /**
    * Store authentication data
+   * Backend returns: { user: {...}, accessToken: "..." }
    */
   setAuthData(data) {
     if (data.accessToken) {
@@ -33,6 +35,10 @@ class AuthService {
       if (isBrowser) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('user', JSON.stringify(data.user));
+        // Store school separately for easy access
+        if (data.user && data.user.school) {
+          localStorage.setItem('school', data.user.school);
+        }
       }
     }
   }
@@ -45,6 +51,7 @@ class AuthService {
     if (isBrowser) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('school');
     }
   }
 
@@ -58,6 +65,15 @@ class AuthService {
   }
 
   /**
+   * Get current school from localStorage
+   */
+  getCurrentSchool() {
+    if (!isBrowser) return null;
+    const user = this.getCurrentUser();
+    return user?.school || localStorage.getItem('school');
+  }
+
+  /**
    * Check if user is authenticated
    */
   isAuthenticated() {
@@ -65,7 +81,16 @@ class AuthService {
   }
 
   /**
+   * Get user role from stored user data
+   */
+  getUserRole() {
+    const user = this.getCurrentUser();
+    return user?.role || null;
+  }
+
+  /**
    * Student Registration
+   * Backend expects: { name, email, password, school, studentType }
    */
   async registerStudent(data) {
     try {
@@ -81,8 +106,13 @@ class AuthService {
         throw new Error(result.error || 'Registration failed');
       }
 
+      // Backend returns: { user: {...}, accessToken: "..." }
       this.setAuthData(result);
-      return { success: true, data: result };
+      return { 
+        success: true, 
+        data: result,
+        user: result.user 
+      };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -90,13 +120,14 @@ class AuthService {
 
   /**
    * Student Login
+   * Backend expects: { email, password }
    */
-  async loginStudent(credentials) {
+  async loginStudent(email, password) {
     try {
       const response = await fetch(`${this.baseURL}/student/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({ email, password })
       });
 
       const result = await response.json();
@@ -105,16 +136,12 @@ class AuthService {
         throw new Error(result.error || 'Login failed');
       }
 
+      // Backend returns: { user: {...}, accessToken: "..." }
       this.setAuthData(result);
       return { 
         success: true, 
-        data: {
-          token: result.accessToken,
-          user: {
-            ...result.user,
-            role: 'student'
-          }
-        }
+        data: result,
+        user: result.user
       };
     } catch (error) {
       return { success: false, error: error.message };
@@ -123,63 +150,82 @@ class AuthService {
 
   /**
    * Teacher Registration
+   * Backend expects: { name, email, password, school }
+   * Backend returns: { user: {...}, accessToken: "..." }
    */
   async registerTeacher(data) {
     try {
+      // Ensure required fields are present
+      const requestData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        school: data.school || 'DemoSchool'
+      };
+
       const response = await fetch(`${this.baseURL}/teacher/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(requestData)
       });
 
       const result = await response.json();
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Registration failed');
+      if (!response.ok || response.status !== 201) {
+        throw new Error(result.error || result.message || 'Registration failed');
       }
 
+      // Backend returns: { user: {...}, accessToken: "..." }
       this.setAuthData(result);
-      return { success: true, data: result };
+      return { 
+        success: true, 
+        data: result,
+        user: result.user 
+      };
     } catch (error) {
+      console.error('Teacher registration error:', error);
       return { success: false, error: error.message };
     }
   }
 
   /**
    * Teacher Login
+   * Backend expects: { email, password }
+   * Backend returns: { user: {...}, accessToken: "..." }
    */
-  async loginTeacher(credentials) {
+  async loginTeacher(email, password) {
     try {
       const response = await fetch(`${this.baseURL}/teacher/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({ email, password })
       });
 
       const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result.error || 'Login failed');
+        throw new Error(result.error || result.message || 'Login failed');
       }
 
+      // Backend returns: { user: {...}, accessToken: "..." }
+      // JWT identity is the email string; claims include role and school
       this.setAuthData(result);
       return { 
         success: true, 
-        data: {
-          token: result.accessToken,
-          user: {
-            ...result.user,
-            role: 'teacher'
-          }
-        }
+        data: result,
+        user: result.user
       };
     } catch (error) {
+      console.error('Teacher login error:', error);
       return { success: false, error: error.message };
     }
   }
 
   /**
    * Verify Token
+   * GET /api/auth/verify
+   * Headers: Authorization: Bearer <JWT>
+   * Returns basic JWT validity info
    */
   async verifyToken() {
     if (!this.token) {
@@ -189,14 +235,41 @@ class AuthService {
     try {
       const response = await fetch(`${this.baseURL}/verify`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: {
+          'Authorization': `Bearer ${this.token}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok || response.status === 401) {
+        this.clearAuthData();
+        throw new Error('Token verification failed');
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Firebase Token Verification (optional, not used by upload flow)
+   * GET /api/auth/firebase/verify
+   */
+  async verifyFirebaseToken(idToken) {
+    try {
+      const response = await fetch(`${this.baseURL}/firebase/verify`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
       });
 
       const result = await response.json();
       
       if (!response.ok) {
-        this.clearAuthData();
-        throw new Error('Token verification failed');
+        throw new Error('Firebase token verification failed');
       }
 
       return { success: true, data: result };

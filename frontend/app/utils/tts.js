@@ -1,297 +1,289 @@
 /**
  * TTS Utility Functions
- * Helper functions for text-to-speech functionality
+ * Helper functions for Text-to-Speech functionality
  */
 
 /**
- * Clean text for TTS reading
- * Removes unnecessary characters and formats text for better speech
+ * Extract readable text from HTML content
+ * @param {string} html - HTML content
+ * @returns {string} - Cleaned text for TTS
  */
-export const cleanTextForTTS = (text) => {
-  if (!text) return '';
+export function extractTextFromHTML(html) {
+  // Create a temporary element to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
   
-  return text
-    // Remove multiple spaces
-    .replace(/\s+/g, ' ')
-    // Remove special characters that don't need to be spoken
-    .replace(/[•·▪▫◦‣⁃]/g, '')
-    // Replace common abbreviations
-    .replace(/\betc\b/gi, 'et cetera')
-    .replace(/\be\.g\./gi, 'for example')
-    .replace(/\bi\.e\./gi, 'that is')
-    // Add pauses for better readability
-    .replace(/([.!?])\s*/g, '$1 ')
-    .replace(/([,;:])\s*/g, '$1 ')
-    // Clean up
-    .trim();
-};
+  // Remove script and style elements
+  const scripts = temp.querySelectorAll('script, style');
+  scripts.forEach(el => el.remove());
+  
+  // Get text content
+  let text = temp.textContent || temp.innerText || '';
+  
+  // Clean up whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  return text;
+}
 
 /**
- * Extract important text from a page section
- * Prioritizes headings, then paragraphs, then other content
+ * Prioritize content for reading
+ * @param {HTMLElement} element - DOM element
+ * @returns {Array} - Array of text segments in priority order
  */
-export const extractImportantText = (element) => {
-  if (!element) return '';
+export function prioritizeContent(element) {
+  const segments = [];
   
-  const texts = [];
-  const processedElements = new Set();
-  
-  // Priority selectors in order of importance
-  const prioritySelectors = [
-    { selector: 'h1', prefix: 'Main heading: ' },
-    { selector: 'h2', prefix: 'Section: ' },
-    { selector: 'h3', prefix: 'Subsection: ' },
-    { selector: '[role="alert"]', prefix: 'Alert: ' },
-    { selector: '.error, .error-message', prefix: 'Error: ' },
-    { selector: '.success, .success-message', prefix: 'Success: ' },
-    { selector: 'label', prefix: 'Label: ' },
-    { selector: 'button:not(:disabled)', prefix: 'Button: ' },
-    { selector: 'a', prefix: 'Link: ' },
-    { selector: 'p', prefix: '' },
-    { selector: 'li', prefix: 'List item: ' },
-    { selector: 'td', prefix: '' },
-    { selector: 'span[aria-label]', prefix: '' },
-  ];
-  
-  prioritySelectors.forEach(({ selector, prefix }) => {
-    const elements = element.querySelectorAll(selector);
-    
-    elements.forEach(el => {
-      // Skip if already processed or hidden
-      if (processedElements.has(el)) return;
-      if (isElementHidden(el)) return;
-      
-      // Mark element and its children as processed
-      markAsProcessed(el, processedElements);
-      
-      // Get text content
-      let text = getDirectTextContent(el);
-      
-      // Add ARIA label if available and different
-      const ariaLabel = el.getAttribute('aria-label');
-      if (ariaLabel && ariaLabel !== text) {
-        text = ariaLabel;
-      }
-      
-      // Add value for input elements
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        const value = el.value;
-        if (value) {
-          text = text ? `${text}: ${value}` : value;
-        }
-      }
-      
-      if (text) {
-        texts.push(prefix + cleanTextForTTS(text));
-      }
+  // Priority 1: Main headings
+  const h1Elements = element.querySelectorAll('h1');
+  h1Elements.forEach(h1 => {
+    segments.push({
+      text: h1.textContent.trim(),
+      type: 'heading',
+      priority: 1
     });
   });
   
-  return texts.join('. ');
-};
-
-/**
- * Check if an element is hidden
- */
-const isElementHidden = (element) => {
-  if (!element) return true;
-  
-  const style = window.getComputedStyle(element);
-  return (
-    style.display === 'none' ||
-    style.visibility === 'hidden' ||
-    style.opacity === '0' ||
-    element.hasAttribute('hidden') ||
-    element.getAttribute('aria-hidden') === 'true'
-  );
-};
-
-/**
- * Get direct text content (not from nested elements)
- */
-const getDirectTextContent = (element) => {
-  let text = '';
-  
-  for (const node of element.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent;
-    }
-  }
-  
-  return text.trim();
-};
-
-/**
- * Mark element and its children as processed
- */
-const markAsProcessed = (element, processedSet) => {
-  processedSet.add(element);
-  const children = element.querySelectorAll('*');
-  children.forEach(child => processedSet.add(child));
-};
-
-/**
- * Get reading time estimate for text
- * Average reading speed: 150-160 words per minute for TTS
- */
-export const getReadingTime = (text, wordsPerMinute = 150) => {
-  if (!text) return 0;
-  
-  const words = text.trim().split(/\s+/).length;
-  const minutes = words / wordsPerMinute;
-  
-  return {
-    minutes: Math.ceil(minutes),
-    seconds: Math.ceil(minutes * 60),
-    words
-  };
-};
-
-/**
- * Create a reading queue from page sections
- */
-export const createReadingQueue = (container) => {
-  const queue = [];
-  
-  // Find main sections
-  const sections = container.querySelectorAll('section, article, [role="region"]');
-  
-  if (sections.length > 0) {
-    sections.forEach(section => {
-      const text = extractImportantText(section);
-      if (text) {
-        queue.push({
-          text,
-          element: section,
-          type: 'section'
-        });
-      }
+  // Priority 2: Subheadings
+  const h2Elements = element.querySelectorAll('h2, h3');
+  h2Elements.forEach(h => {
+    segments.push({
+      text: h.textContent.trim(),
+      type: 'subheading',
+      priority: 2
     });
-  } else {
-    // Fall back to reading the entire container
-    const text = extractImportantText(container);
-    if (text) {
-      queue.push({
-        text,
-        element: container,
-        type: 'content'
+  });
+  
+  // Priority 3: Important alerts/notifications
+  const alerts = element.querySelectorAll('[role="alert"], .alert, .notification');
+  alerts.forEach(alert => {
+    segments.push({
+      text: alert.textContent.trim(),
+      type: 'alert',
+      priority: 3
+    });
+  });
+  
+  // Priority 4: Main content paragraphs
+  const paragraphs = element.querySelectorAll('p, li');
+  paragraphs.forEach(p => {
+    const text = p.textContent.trim();
+    if (text.length > 20) { // Skip very short paragraphs
+      segments.push({
+        text: text,
+        type: 'content',
+        priority: 4
       });
     }
-  }
+  });
   
-  return queue;
-};
-
-/**
- * Format form field for TTS
- */
-export const formatFormFieldForTTS = (field) => {
-  const parts = [];
-  
-  // Get label
-  const label = field.labels?.[0]?.textContent || 
-                field.getAttribute('aria-label') ||
-                field.getAttribute('placeholder') ||
-                field.name ||
-                'Field';
-  
-  parts.push(cleanTextForTTS(label));
-  
-  // Add field type
-  const type = field.type || field.tagName.toLowerCase();
-  if (type !== 'text') {
-    parts.push(type);
-  }
-  
-  // Add required status
-  if (field.required || field.getAttribute('aria-required') === 'true') {
-    parts.push('required');
-  }
-  
-  // Add current value
-  if (field.value) {
-    parts.push(`current value: ${field.value}`);
-  }
-  
-  // Add error message if present
-  const errorId = field.getAttribute('aria-describedby');
-  if (errorId) {
-    const errorElement = document.getElementById(errorId);
-    if (errorElement && !isElementHidden(errorElement)) {
-      parts.push(`Error: ${cleanTextForTTS(errorElement.textContent)}`);
+  // Priority 5: Buttons and links
+  const interactive = element.querySelectorAll('button, a');
+  interactive.forEach(el => {
+    const text = el.textContent.trim();
+    if (text) {
+      segments.push({
+        text: `${el.tagName === 'BUTTON' ? 'Button' : 'Link'}: ${text}`,
+        type: 'interactive',
+        priority: 5
+      });
     }
-  }
+  });
   
-  return parts.join(', ');
-};
+  // Sort by priority
+  segments.sort((a, b) => a.priority - b.priority);
+  
+  return segments;
+}
 
 /**
- * Get navigation announcement for route changes
+ * Format text for better TTS pronunciation
+ * @param {string} text - Raw text
+ * @returns {string} - Formatted text
  */
-export const getNavigationAnnouncement = (routeName, pageTitle) => {
-  const parts = [];
+export function formatForTTS(text) {
+  let formatted = text;
   
-  if (pageTitle) {
-    parts.push(`Navigated to ${pageTitle}`);
-  } else if (routeName) {
-    parts.push(`Navigated to ${routeName} page`);
-  } else {
-    parts.push('Page changed');
-  }
-  
-  // Add page landmark information
-  const mainContent = document.querySelector('main, [role="main"]');
-  if (mainContent) {
-    const heading = mainContent.querySelector('h1');
-    if (heading) {
-      parts.push(`Page heading: ${cleanTextForTTS(heading.textContent)}`);
-    }
-  }
-  
-  return parts.join('. ');
-};
-
-/**
- * Create keyboard navigation instructions
- */
-export const getTTSKeyboardInstructions = () => {
-  return `
-    Voice assistance keyboard shortcuts:
-    Alt plus R to read the current page.
-    Alt plus S to stop reading.
-    Alt plus P to pause or resume reading.
-    Alt plus F to read the focused element.
-    Tab key to navigate through interactive elements.
-    Enter or Space to activate buttons and links.
-  `;
-};
-
-/**
- * Format time for TTS
- */
-export const formatTimeForTTS = (date) => {
-  if (!date) return '';
-  
-  const d = new Date(date);
-  const options = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric'
+  // Expand common abbreviations
+  const abbreviations = {
+    'Dr.': 'Doctor',
+    'Mr.': 'Mister',
+    'Mrs.': 'Missus',
+    'Ms.': 'Miss',
+    'Prof.': 'Professor',
+    'St.': 'Street',
+    'Ave.': 'Avenue',
+    'etc.': 'et cetera',
+    'vs.': 'versus',
+    'e.g.': 'for example',
+    'i.e.': 'that is',
   };
   
-  return d.toLocaleDateString('en-US', options);
-};
+  Object.entries(abbreviations).forEach(([abbr, full]) => {
+    const regex = new RegExp(`\\b${abbr.replace('.', '\\.')}`, 'gi');
+    formatted = formatted.replace(regex, full);
+  });
+  
+  // Add pauses for better readability
+  formatted = formatted.replace(/([.!?])\s+/g, '$1 ... ');
+  formatted = formatted.replace(/([,;:])\s+/g, '$1 .. ');
+  
+  // Handle numbers
+  formatted = formatted.replace(/\b(\d+)\s*%/g, '$1 percent');
+  formatted = formatted.replace(/\$\s*(\d+)/g, '$1 dollars');
+  
+  // Handle special characters
+  formatted = formatted.replace(/&/g, ' and ');
+  formatted = formatted.replace(/@/g, ' at ');
+  formatted = formatted.replace(/#/g, ' number ');
+  
+  return formatted;
+}
+
+/**
+ * Get reading time estimate
+ * @param {string} text - Text to read
+ * @param {number} wordsPerMinute - Reading speed (default 150)
+ * @returns {number} - Estimated time in seconds
+ */
+export function getReadingTime(text, wordsPerMinute = 150) {
+  const words = text.split(/\s+/).length;
+  const minutes = words / wordsPerMinute;
+  return Math.ceil(minutes * 60);
+}
+
+/**
+ * Create speech-friendly description of UI element
+ * @param {HTMLElement} element - DOM element
+ * @returns {string} - Description for TTS
+ */
+export function describeElement(element) {
+  const descriptions = [];
+  
+  // Get role or element type
+  const role = element.getAttribute('role') || element.tagName.toLowerCase();
+  
+  // Get label or text content
+  const label = element.getAttribute('aria-label') || 
+                element.getAttribute('title') || 
+                element.textContent?.trim();
+  
+  // Build description based on element type
+  switch (role) {
+    case 'button':
+      descriptions.push(`Button: ${label}`);
+      if (element.disabled) descriptions.push('Disabled');
+      break;
+      
+    case 'link':
+    case 'a':
+      descriptions.push(`Link: ${label}`);
+      const href = element.getAttribute('href');
+      if (href && href.startsWith('http')) {
+        descriptions.push('External link');
+      }
+      break;
+      
+    case 'textbox':
+    case 'input':
+      const inputType = element.getAttribute('type') || 'text';
+      descriptions.push(`${inputType} input`);
+      if (label) descriptions.push(label);
+      if (element.value) descriptions.push(`Current value: ${element.value}`);
+      if (element.required) descriptions.push('Required field');
+      break;
+      
+    case 'img':
+      const alt = element.getAttribute('alt');
+      if (alt) {
+        descriptions.push(`Image: ${alt}`);
+      } else {
+        descriptions.push('Image without description');
+      }
+      break;
+      
+    case 'heading':
+    case 'h1':
+    case 'h2':
+    case 'h3':
+      const level = element.tagName.charAt(1);
+      descriptions.push(`Heading level ${level}: ${label}`);
+      break;
+      
+    default:
+      if (label) descriptions.push(label);
+  }
+  
+  return descriptions.join('. ');
+}
+
+/**
+ * Check if element is visible
+ * @param {HTMLElement} element - DOM element
+ * @returns {boolean} - Whether element is visible
+ */
+export function isElementVisible(element) {
+  if (!element) return false;
+  
+  const style = window.getComputedStyle(element);
+  
+  return style.display !== 'none' && 
+         style.visibility !== 'hidden' && 
+         style.opacity !== '0' &&
+         element.offsetParent !== null;
+}
+
+/**
+ * Get focusable elements
+ * @param {HTMLElement} container - Container element
+ * @returns {Array} - Array of focusable elements
+ */
+export function getFocusableElements(container = document) {
+  const focusableSelectors = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', ');
+  
+  const elements = container.querySelectorAll(focusableSelectors);
+  return Array.from(elements).filter(isElementVisible);
+}
+
+/**
+ * Announce message with ARIA live region
+ * @param {string} message - Message to announce
+ * @param {string} priority - 'polite' or 'assertive'
+ */
+export function announceToScreenReader(message, priority = 'polite') {
+  const announcement = document.createElement('div');
+  announcement.setAttribute('role', 'status');
+  announcement.setAttribute('aria-live', priority);
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.style.position = 'absolute';
+  announcement.style.left = '-10000px';
+  announcement.style.width = '1px';
+  announcement.style.height = '1px';
+  announcement.style.overflow = 'hidden';
+  
+  announcement.textContent = message;
+  document.body.appendChild(announcement);
+  
+  // Remove after announcement
+  setTimeout(() => {
+    document.body.removeChild(announcement);
+  }, 1000);
+}
 
 export default {
-  cleanTextForTTS,
-  extractImportantText,
+  extractTextFromHTML,
+  prioritizeContent,
+  formatForTTS,
   getReadingTime,
-  createReadingQueue,
-  formatFormFieldForTTS,
-  getNavigationAnnouncement,
-  getTTSKeyboardInstructions,
-  formatTimeForTTS
+  describeElement,
+  isElementVisible,
+  getFocusableElements,
+  announceToScreenReader,
 };

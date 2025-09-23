@@ -1,17 +1,24 @@
 import { useState, useEffect, useContext } from 'react';
-import { api } from '../../../utils/api';
+import { useNavigate } from 'react-router';
 import { DocumentUpload } from '../document-upload/DocumentUpload';
 import { AudioRecorder } from '../audio-input/AudioRecorder';
-import { QASection } from './QASection';
-import { NotesList } from '../notes/NotesList';
+import QASection from './QASection';
+import NotesList from '../notes/NotesList';
 import { STUDENT_TYPES } from '../../../constants/studentTypes';
 import { useAuth } from '../../../contexts/AuthContext';
 import AdaptiveUIContext from '../../../contexts/AdaptiveUIContext';
 import TTSContext from '../../../contexts/TTSContext';
 import { TTSController } from '../../../components/tts/TTSController';
+import teacherService from '../../../services/teacher.service';
+import authService from '../../../services/auth.service';
 
-export function Dashboard({ sessionId, studentType, studentInfo }) {
-  const [notes, setNotes] = useState([]);
+export function Dashboard({ studentType = 'vision' }) {
+  const navigate = useNavigate();
+  const [selectedClass, setSelectedClass] = useState('10');
+  const [selectedSubject, setSelectedSubject] = useState('science');
+  const [selectedTopic, setSelectedTopic] = useState('');
+  const [subjects, setSubjects] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -20,7 +27,7 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
   const uiSettings = adaptiveContext?.uiSettings || {};
   
   // Use auth context
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   
   // Use TTS context safely
   const ttsContext = useContext(TTSContext);
@@ -35,61 +42,94 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
     type => type.value === studentType
   );
 
+  // Redirect if not authenticated
   useEffect(() => {
-    // Announce page navigation for TTS users
-    if (ttsEnabled && studentType === 'visually_impaired') {
+    if (!isAuthenticated) {
+      navigate('/auth/student');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Load subjects when class changes
+  useEffect(() => {
+    if (selectedClass) {
+      loadSubjects();
+    }
+  }, [selectedClass]);
+
+  // Load topics when subject changes
+  useEffect(() => {
+    if (selectedClass && selectedSubject) {
+      loadTopics();
+    }
+  }, [selectedClass, selectedSubject]);
+
+  // Announce page navigation for TTS users
+  useEffect(() => {
+    if (ttsEnabled && studentType === 'vision') {
       announceNavigation('Dashboard', 'Your Adaptive Learning Dashboard');
-      // Auto-read page content after a short delay
       setTimeout(() => {
         readPageContent();
       }, 1500);
     }
-    
-    // Simulate loading notes - in production, this would fetch from API
-    setLoading(true);
-    setTimeout(() => {
-      setNotes([
-        { id: 1, title: 'Welcome Note', content: 'Welcome to your adaptive learning dashboard!' },
-      ]);
-      setLoading(false);
-      
-      // Announce when notes are loaded
-      if (ttsEnabled) {
-        announceSuccess('Your notes have been loaded');
-      }
-    }, 1000);
-  }, [sessionId, ttsEnabled, studentType]);
+  }, [ttsEnabled, studentType]);
 
-  const loadNotes = async () => {
+  const loadSubjects = async () => {
     try {
-      setLoading(true);
-      // Simulated API call
-      setTimeout(() => {
-        setNotes(prev => [...prev, { 
-          id: Date.now(), 
-          title: `Note ${prev.length + 1}`, 
-          content: 'New note content' 
-        }]);
-        setLoading(false);
-      }, 500);
+      const school = authService.getCurrentSchool() || 'DemoSchool';
+      const result = await teacherService.getSubjects(school, selectedClass);
+      
+      if (result.success) {
+        setSubjects(result.data);
+        if (result.data.length > 0 && !selectedSubject) {
+          setSelectedSubject(result.data[0].value);
+        }
+      }
     } catch (err) {
-      setError('Failed to load notes: ' + err.message);
-      setLoading(false);
+      console.error('Failed to load subjects:', err);
     }
+  };
+
+  const loadTopics = async () => {
+    try {
+      const school = authService.getCurrentSchool() || 'DemoSchool';
+      const result = await teacherService.getNotes({
+        school,
+        class: selectedClass,
+        subject: selectedSubject
+      });
+      
+      if (result.success) {
+        // Extract unique topics from notes
+        const uniqueTopics = [...new Set(result.data.map(note => note.topic || note.name))];
+        setTopics(uniqueTopics.filter(Boolean));
+        if (uniqueTopics.length > 0 && !selectedTopic) {
+          setSelectedTopic(uniqueTopics[0]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load topics:', err);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   const handleUploadComplete = (result) => {
-    loadNotes();
     if (ttsEnabled) {
       announceSuccess('Document uploaded successfully');
     }
+    // Reload topics after upload
+    loadTopics();
   };
 
   const handleRecordingComplete = (result) => {
-    loadNotes();
     if (ttsEnabled) {
       announceSuccess('Audio recording saved');
     }
+    // Reload topics after recording
+    loadTopics();
   };
 
   // Handle TTS reading for buttons
@@ -97,7 +137,6 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
     if (ttsEnabled) {
       readPageContent();
     } else {
-      // If TTS is not enabled through context, use browser's speech synthesis directly
       const mainContent = document.querySelector('.dashboard-content') || document.querySelector('main');
       if (mainContent && window.speechSynthesis) {
         const text = mainContent.textContent;
@@ -107,15 +146,30 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
     }
   };
 
+  const getStudentTypeLabel = () => {
+    const labels = {
+      'vision': 'Visual Impairment',
+      'hearing': 'Hearing Impairment',
+      'dyslexie': 'Dyslexia',
+      'adhd': 'ADHD',
+      'autism': 'Autism Spectrum',
+      'speech': 'Speech Impairment',
+      'slow_learner': 'Slow Learner'
+    };
+    return labels[studentType] || 'General';
+  };
+
   // Render different UI based on student type
   const renderDashboardContent = () => {
     switch (studentType) {
+      case 'vision':
       case 'visually_impaired':
         return renderVisuallyImpairedDashboard();
+      case 'hearing':
       case 'hearing_impaired':
         return renderHearingImpairedDashboard();
-      case 'speech_impaired':
-        return renderSpeechImpairedDashboard();
+      case 'dyslexie':
+        return renderDyslexiaDashboard();
       case 'slow_learner':
         return renderSlowLearnerDashboard();
       default:
@@ -144,20 +198,56 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         </div>
       )}
 
+      {/* Class and Subject Selection */}
+      <div className="bg-white rounded-xl shadow-lg p-6 border-4 border-gray-300">
+        <h2 className="text-2xl font-bold mb-4">Select Your Class & Subject</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500"
+            aria-label="Select class"
+          >
+            {[6, 7, 8, 9, 10, 11, 12].map(cls => (
+              <option key={cls} value={cls}>Class {cls}</option>
+            ))}
+          </select>
+          
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500"
+            aria-label="Select subject"
+          >
+            {subjects.map(subj => (
+              <option key={subj.value} value={subj.value}>{subj.label}</option>
+            ))}
+          </select>
+
+          {topics.length > 0 && (
+            <select
+              value={selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500"
+              aria-label="Select topic"
+            >
+              <option value="">All Topics</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
       {/* Voice Controls Section */}
       <div className="bg-white rounded-xl shadow-lg p-8 border-4 border-blue-500">
         <h2 className="text-2xl font-bold mb-6 text-blue-900">Voice Controls</h2>
         <div className="grid grid-cols-1 gap-6">
           <AudioRecorder 
-            sessionId={sessionId} 
+            sessionId={`${selectedClass}-${selectedSubject}`} 
             onRecordingComplete={handleRecordingComplete} 
           />
-          <button 
-            className="p-6 bg-blue-600 text-white text-xl rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300"
-            aria-label="Start voice command"
-          >
-            🎤 Start Voice Command
-          </button>
           <button 
             onClick={handleReadAloud}
             className="p-6 bg-green-600 text-white text-xl rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300"
@@ -168,10 +258,23 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         </div>
       </div>
 
-      {/* Simplified Notes */}
+      {/* Q&A Section */}
+      <div className="bg-white rounded-xl shadow-lg p-8 border-4 border-purple-500">
+        <QASection 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+          topic={selectedTopic}
+        />
+      </div>
+
+      {/* Notes */}
       <div className="bg-white rounded-xl shadow-lg p-8 border-4 border-gray-300">
-        <h2 className="text-2xl font-bold mb-6">Your Audio Notes</h2>
-        <NotesList notes={notes} studentType={studentType} />
+        <NotesList 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+        />
       </div>
 
       {/* TTS Controller - floating controls */}
@@ -192,102 +295,168 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         </div>
       </div>
 
-      {/* Visual alerts section */}
-      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl animate-pulse">⚠️</span>
-          <p className="font-medium">Visual notifications are enabled for all interactions</p>
+      {/* Class and Subject Selection */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4">📚 Select Your Class & Subject</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="p-3 border-2 border-gray-300 rounded-lg focus:border-green-500"
+          >
+            {[6, 7, 8, 9, 10, 11, 12].map(cls => (
+              <option key={cls} value={cls}>Class {cls}</option>
+            ))}
+          </select>
+          
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="p-3 border-2 border-gray-300 rounded-lg focus:border-green-500"
+          >
+            {subjects.map(subj => (
+              <option key={subj.value} value={subj.value}>{subj.label}</option>
+            ))}
+          </select>
+
+          {topics.length > 0 && (
+            <select
+              value={selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              className="p-3 border-2 border-gray-300 rounded-lg focus:border-green-500"
+            >
+              <option value="">All Topics</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Document Upload with visual feedback */}
-        <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-green-200">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span>📄</span> Upload Documents
-          </h2>
-          <DocumentUpload 
-            sessionId={sessionId} 
-            onUploadComplete={handleUploadComplete} 
-          />
-        </div>
-
         {/* Visual Q&A */}
         <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-200">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <span>💬</span> Text Communication
           </h2>
-          <QASection sessionId={sessionId} />
-        </div>
-      </div>
-
-      {/* Structured Notes with visual indicators */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <span>📝</span> Your Notes (Structured View)
-        </h2>
-        <NotesList notes={notes} studentType={studentType} />
-      </div>
-    </div>
-  );
-
-  const renderSpeechImpairedDashboard = () => (
-    <div className="space-y-6">
-      {/* Text-focused header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-xl">
-        <h1 className="text-2xl font-bold mb-2">Text Communication Dashboard</h1>
-        <p className="text-lg">Keyboard-optimized interface with text input focus</p>
-      </div>
-
-      {/* Keyboard shortcuts guide */}
-      <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
-        <h3 className="font-bold mb-2">Quick Keyboard Shortcuts:</h3>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div><kbd className="px-2 py-1 bg-white rounded">Tab</kbd> Navigate</div>
-          <div><kbd className="px-2 py-1 bg-white rounded">Enter</kbd> Submit</div>
-          <div><kbd className="px-2 py-1 bg-white rounded">Ctrl+N</kbd> New Note</div>
-          <div><kbd className="px-2 py-1 bg-white rounded">Ctrl+S</kbd> Save</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enhanced text input area */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">📝 Text Input Area</h2>
-          <textarea 
-            className="w-full h-32 p-4 border-2 border-purple-300 rounded-lg text-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-            placeholder="Type your thoughts here..."
+          <QASection 
+            studentType={studentType}
+            className={selectedClass}
+            subject={selectedSubject}
+            topic={selectedTopic}
           />
-          <div className="mt-4 flex gap-2">
-            <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-              Save Note
-            </button>
-            <button className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
-              Clear
-            </button>
-          </div>
         </div>
 
-        {/* Document management */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">📁 Document Management</h2>
+        {/* Document Upload */}
+        <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-green-200">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>📄</span> Upload Documents
+          </h2>
           <DocumentUpload 
-            sessionId={sessionId} 
+            sessionId={`${selectedClass}-${selectedSubject}`} 
             onUploadComplete={handleUploadComplete} 
           />
         </div>
       </div>
 
-      {/* Text-based Q&A */}
+      {/* Structured Notes with visual indicators */}
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">💬 Written Q&A</h2>
-        <QASection sessionId={sessionId} />
+        <NotesList 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+        />
+      </div>
+    </div>
+  );
+
+  const renderDyslexiaDashboard = () => (
+    <div className="space-y-6">
+      {/* Dyslexia-friendly header */}
+      <div className="bg-gradient-to-r from-purple-400 to-pink-400 text-white p-6 rounded-xl">
+        <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}>
+          Learning Dashboard
+        </h1>
+        <p className="text-xl">Content adapted for easier reading</p>
       </div>
 
-      {/* Notes */}
+      {/* Reading tips */}
+      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+        <h3 className="font-bold mb-2">💡 Reading Tips:</h3>
+        <ul className="list-disc list-inside space-y-1 text-sm">
+          <li>Use the ruler guide to follow lines</li>
+          <li>Take breaks every 10-15 minutes</li>
+          <li>Adjust text size and spacing as needed</li>
+          <li>Use colored overlays if helpful</li>
+        </ul>
+      </div>
+
+      {/* Class and Subject Selection */}
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">📚 Your Notes</h2>
-        <NotesList notes={notes} studentType={studentType} />
+        <h2 className="text-xl font-bold mb-4">Select Your Learning Area</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500"
+            style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}
+          >
+            {[6, 7, 8, 9, 10, 11, 12].map(cls => (
+              <option key={cls} value={cls}>Class {cls}</option>
+            ))}
+          </select>
+          
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500"
+            style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}
+          >
+            {subjects.map(subj => (
+              <option key={subj.value} value={subj.value}>{subj.label}</option>
+            ))}
+          </select>
+
+          {topics.length > 0 && (
+            <select
+              value={selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              className="p-3 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500"
+              style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}
+            >
+              <option value="">All Topics</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {/* Adapted Notes */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}>
+          📖 Your Adapted Notes
+        </h2>
+        <NotesList 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+        />
+      </div>
+
+      {/* Q&A Section */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'OpenDyslexic, Arial, sans-serif' }}>
+          ❓ Ask Questions
+        </h2>
+        <QASection 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+          topic={selectedTopic}
+        />
       </div>
     </div>
   );
@@ -311,7 +480,7 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
             <span className="text-2xl">1️⃣</span>
-            <span className="text-lg">Upload your study material</span>
+            <span className="text-lg">Choose your class and subject</span>
           </div>
           <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
             <span className="text-2xl">2️⃣</span>
@@ -324,18 +493,64 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         </div>
       </div>
 
-      {/* Simplified upload section with visual aids */}
+      {/* Simple Class Selection */}
       <div className="bg-white rounded-xl shadow-lg p-8 border-3 border-orange-200">
+        <h2 className="text-2xl font-bold mb-6">📚 Choose What to Study</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-lg font-medium mb-2">Your Class:</label>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full p-4 text-lg border-2 border-orange-300 rounded-lg focus:border-orange-500"
+            >
+              {[6, 7, 8, 9, 10, 11, 12].map(cls => (
+                <option key={cls} value={cls}>Class {cls}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-lg font-medium mb-2">Subject:</label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full p-4 text-lg border-2 border-orange-300 rounded-lg focus:border-orange-500"
+            >
+              {subjects.map(subj => (
+                <option key={subj.value} value={subj.value}>{subj.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {topics.length > 0 && (
+            <div>
+              <label className="block text-lg font-medium mb-2">Topic:</label>
+              <select
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                className="w-full p-4 text-lg border-2 border-orange-300 rounded-lg focus:border-orange-500"
+              >
+                <option value="">All Topics</option>
+                {topics.map(topic => (
+                  <option key={topic} value={topic}>{topic}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Visual notes with icons */}
+      <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-          <span className="text-3xl">📤</span>
-          Upload Your Files
+          <span className="text-3xl">📖</span>
+          Your Study Notes
         </h2>
-        <p className="text-gray-600 mb-4 text-lg">
-          Click the button below to add your study materials
-        </p>
-        <DocumentUpload 
-          sessionId={sessionId} 
-          onUploadComplete={handleUploadComplete} 
+        <NotesList 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
         />
       </div>
 
@@ -348,66 +563,101 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
         <p className="text-gray-600 mb-4 text-lg">
           Example: "What does this word mean?" or "Can you explain this again?"
         </p>
-        <QASection sessionId={sessionId} />
-      </div>
-
-      {/* Visual notes with icons */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-          <span className="text-3xl">📖</span>
-          Your Study Notes
-        </h2>
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="text-3xl animate-bounce">⏳</div>
-            <p className="text-lg mt-2">Loading your notes...</p>
-          </div>
-        ) : (
-          <NotesList notes={notes} studentType={studentType} />
-        )}
+        <QASection 
+          studentType={studentType}
+          className={selectedClass}
+          subject={selectedSubject}
+          topic={selectedTopic}
+        />
       </div>
     </div>
   );
 
   const renderDefaultDashboard = () => (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl">
+        <h1 className="text-2xl font-bold">Student Learning Dashboard</h1>
+        <p className="text-lg mt-2">Welcome back, {user?.name || 'Student'}!</p>
+      </div>
+
+      {/* Class and Subject Selection */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold mb-4">Select Your Class & Subject</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            {[6, 7, 8, 9, 10, 11, 12].map(cls => (
+              <option key={cls} value={cls}>Class {cls}</option>
+            ))}
+          </select>
+          
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            {subjects.map(subj => (
+              <option key={subj.value} value={subj.value}>{subj.label}</option>
+            ))}
+          </select>
+
+          {topics.length > 0 && (
+            <select
+              value={selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              className="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Topics</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">Add Content</h2>
-            <div className="space-y-4">
-              <DocumentUpload 
-                sessionId={sessionId} 
-                onUploadComplete={handleUploadComplete} 
-              />
-            </div>
-          </div>
-          <QASection sessionId={sessionId} />
+          <QASection 
+            studentType={studentType}
+            className={selectedClass}
+            subject={selectedSubject}
+            topic={selectedTopic}
+          />
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Your Notes</h2>
-          <NotesList notes={notes} studentType={studentType} />
+          <NotesList 
+            studentType={studentType}
+            className={selectedClass}
+            subject={selectedSubject}
+          />
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       {/* User info and logout */}
       <div className="max-w-7xl mx-auto mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center bg-white rounded-lg shadow p-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{studentConfig?.icon === 'eye' ? '👁️' : 
-                                         studentConfig?.icon === 'ear' ? '👂' :
-                                         studentConfig?.icon === 'mic' ? '🎤' : '📚'}</span>
+            <span className="text-2xl">
+              {studentType === 'vision' ? '👁️' :
+               studentType === 'hearing' ? '👂' :
+               studentType === 'dyslexie' ? '📖' :
+               studentType === 'slow_learner' ? '🌟' : '📚'}
+            </span>
             <div>
-              <p className="text-sm text-gray-600">Logged in as</p>
-              <p className="font-semibold">{studentInfo?.name || user?.name || 'Student'} - {studentConfig?.label}</p>
+              <p className="text-sm text-gray-600">Logged in as Student</p>
+              <p className="font-semibold">{user?.name || 'Student'} - {getStudentTypeLabel()}</p>
             </div>
           </div>
           <button 
-            onClick={logout}
+            onClick={handleLogout}
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
             Logout
@@ -422,3 +672,5 @@ export function Dashboard({ sessionId, studentType, studentInfo }) {
     </div>
   );
 }
+
+export default Dashboard;

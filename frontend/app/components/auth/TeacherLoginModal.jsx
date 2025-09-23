@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { useAuth } from "../../contexts/AuthContext";
 
 export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
-  const { loginTeacher } = useAuth();
+  const { 
+    loginTeacher,
+    error: authError,
+    clearError
+  } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -14,6 +18,12 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     rememberMe: false,
   });
 
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ 
@@ -21,6 +31,7 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
       [name]: type === 'checkbox' ? checked : value 
     });
     setError("");
+    clearError();
   };
 
   const validateForm = () => {
@@ -44,10 +55,11 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     
     setLoading(true);
     setError("");
+    clearError();
     
     try {
       // Login the teacher using the context function
-      const response = await loginTeacher(formData.email, formData.password);
+      const response = await loginTeacher(formData);
       
       if (response.success) {
         // Login successful, user is already logged in by the context
@@ -71,8 +83,8 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
   // Demo credentials for testing
   const fillDemoCredentials = () => {
     setFormData({
-      email: "demo.teacher@example.com",
-      password: "demo123",
+      email: "teacher@example.com",
+      password: "secret123",
       rememberMe: false,
     });
   };
@@ -117,7 +129,7 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
             onClick={fillDemoCredentials}
             className="w-full p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm hover:bg-yellow-100 transition-colors"
           >
-            🔧 Use Demo Credentials
+            🔧 Use Demo Credentials (teacher@example.com / secret123)
           </button>
 
           <div>
@@ -214,3 +226,5 @@ export function TeacherLoginModal({ onClose, onSuccess, onSwitchToRegister }) {
     </div>
   );
 }
+
+export default TeacherLoginModal;

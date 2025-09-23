@@ -37,29 +37,22 @@ export const AuthProvider = ({ children }) => {
     
     setIsLoading(true);
     try {
+      // Check for traditional auth
       const currentUser = authService.getCurrentUser();
       const token = localStorage.getItem('accessToken');
       
       if (currentUser && token) {
-        // For mock authentication, just check if token exists
-        // In production, uncomment the verification below
-        if (token.startsWith('mock-token-')) {
-          // Mock token, accept it
+        // Verify token with backend
+        const result = await authService.verifyToken();
+        
+        if (result.success) {
           setUser(currentUser);
           setIsAuthenticated(true);
         } else {
-          // Real token, verify with backend
-          const result = await authService.verifyToken();
-          
-          if (result.success) {
-            setUser(currentUser);
-            setIsAuthenticated(true);
-          } else {
-            // Token invalid, clear auth data
-            authService.clearAuthData();
-            setUser(null);
-            setIsAuthenticated(false);
-          }
+          // Token invalid, clear auth data
+          authService.clearAuthData();
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
     } catch (err) {
@@ -97,12 +90,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Student Login
-  const loginStudent = async (email, password) => {
+  const loginStudent = async (credentials) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await authService.loginStudent(email, password);
+      const result = await authService.loginStudent(credentials);
       
       if (result.success) {
         setUser(result.data.user);
@@ -147,12 +140,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Teacher Login
-  const loginTeacher = async (email, password) => {
+  const loginTeacher = async (credentials) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await authService.loginTeacher(email, password);
+      const result = await authService.loginTeacher(credentials);
       
       if (result.success) {
         setUser(result.data.user);
@@ -172,7 +165,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Logout
-  const logout = () => {
+  const logout = async () => {
+    // Clear traditional auth
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);

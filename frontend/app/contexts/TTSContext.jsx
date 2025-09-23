@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import useTTS from '../hooks/useTTS';
 
 const TTSContext = createContext();
@@ -11,47 +11,59 @@ export const useTTSContext = () => {
   return context;
 };
 
-/**
- * TTS Provider for managing Text-to-Speech functionality across the app
- */
-export const TTSProvider = ({ children, enabled = false, autoStart = false }) => {
+export const TTSProvider = ({ children }) => {
   const tts = useTTS();
-  const [isEnabled, setIsEnabled] = useState(enabled);
-  const [hasUserConsent, setHasUserConsent] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [autoRead, setAutoRead] = useState(true);
   const [readingQueue, setReadingQueue] = useState([]);
-  const [currentReadingElement, setCurrentReadingElement] = useState(null);
+  const [currentlyReading, setCurrentlyReading] = useState(null);
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
+  
+  // Check if user is visually impaired from localStorage
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.studentType === 'visually_impaired' && !hasShownWelcome) {
+          // Show welcome popup for visually impaired students
+          setShowWelcomePopup(true);
+          setHasShownWelcome(true);
+          
+          // Announce welcome message
+          if (tts.isSupported) {
+            setTimeout(() => {
+              tts.speak(
+                "Welcome to the Adaptive Learning Platform. " +
+                "This platform has been optimized for screen readers and voice assistance. " +
+                "Would you like to enable Text-to-Speech for better navigation? " +
+                "Click anywhere on the screen or press Enter to continue."
+              );
+            }, 500);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, [tts, hasShownWelcome]);
 
-  // Auto-read on navigation for visually impaired users
-  const [autoRead, setAutoRead] = useState(autoStart);
-
-  /**
-   * Enable TTS with user consent
-   */
+  // Enable TTS
   const enableTTS = useCallback(() => {
     setIsEnabled(true);
-    setHasUserConsent(true);
     setShowWelcomePopup(false);
-    
-    // Announce TTS is enabled
-    if (tts.isSupported) {
-      tts.speak('Text to speech is now enabled. I will read the page content for you.');
-    }
+    tts.speak("Text-to-Speech has been enabled. You can press Alt+H at any time to hear the available keyboard shortcuts.");
   }, [tts]);
 
-  /**
-   * Disable TTS
-   */
+  // Disable TTS
   const disableTTS = useCallback(() => {
     setIsEnabled(false);
     tts.stop();
-    setReadingQueue([]);
-    setCurrentReadingElement(null);
+    tts.speak("Text-to-Speech has been disabled.");
   }, [tts]);
 
-  /**
-   * Toggle TTS on/off
-   */
+  // Toggle TTS
   const toggleTTS = useCallback(() => {
     if (isEnabled) {
       disableTTS();
@@ -60,78 +72,72 @@ export const TTSProvider = ({ children, enabled = false, autoStart = false }) =>
     }
   }, [isEnabled, enableTTS, disableTTS]);
 
-  /**
-   * Read specific content
-   */
-  const readContent = useCallback((content, priority = 'normal') => {
-    if (!isEnabled || !tts.isSupported) return;
-
-    if (priority === 'immediate') {
-      tts.stop();
-      tts.speak(content);
-    } else if (priority === 'high') {
-      setReadingQueue(prev => [content, ...prev]);
-    } else {
-      setReadingQueue(prev => [...prev, content]);
-    }
-  }, [isEnabled, tts]);
-
-  /**
-   * Read page content automatically
-   */
+  // Read page content
   const readPageContent = useCallback(() => {
     if (!isEnabled || !tts.isSupported) return;
-
+    
     // Find main content area
-    const mainContent = document.querySelector('main') || 
-                       document.querySelector('[role="main"]') || 
-                       document.querySelector('.dashboard-content') ||
-                       document.body;
-
+    const mainContent = document.querySelector('main') || document.querySelector('[role="main"]') || document.body;
+    
     if (mainContent) {
       tts.speakElement(mainContent);
-      setCurrentReadingElement(mainContent);
+      setCurrentlyReading('page');
     }
   }, [isEnabled, tts]);
 
-  /**
-   * Read focused element
-   */
+  // Read focused element
   const readFocusedElement = useCallback(() => {
     if (!isEnabled || !tts.isSupported) return;
-
+    
     const focusedElement = document.activeElement;
     if (focusedElement && focusedElement !== document.body) {
       const text = focusedElement.getAttribute('aria-label') || 
-                  focusedElement.textContent || 
-                  focusedElement.value || 
-                  '';
-      
-      if (text) {
-        tts.speak(text);
-      }
+                   focusedElement.textContent || 
+                   focusedElement.value || 
+                   'No content to read';
+      tts.speak(text);
+      setCurrentlyReading('focused');
     }
   }, [isEnabled, tts]);
 
-  /**
-   * Handle keyboard shortcuts for TTS control
-   */
-  useEffect(() => {
-    if (!isEnabled) return;
+  // Announce navigation
+  const announceNavigation = useCallback((message) => {
+    if (!isEnabled || !tts.isSupported) return;
+    tts.speak(message);
+  }, [isEnabled, tts]);
 
+  // Read notification
+  const readNotification = useCallback((message, priority = 'normal') => {
+    if (!isEnabled || !tts.isSupported) return;
+    
+    if (priority === 'high') {
+      tts.stop();
+      tts.speak(message);
+    } else {
+      tts.queueSpeak(message);
+    }
+  }, [isEnabled, tts]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
     const handleKeyPress = (e) => {
-      // Alt + R: Read page
+      if (!isEnabled) return;
+      
+      // Alt + R: Read page content
       if (e.altKey && e.key === 'r') {
         e.preventDefault();
         readPageContent();
       }
+      
       // Alt + S: Stop reading
-      else if (e.altKey && e.key === 's') {
+      if (e.altKey && e.key === 's') {
         e.preventDefault();
         tts.stop();
+        setCurrentlyReading(null);
       }
+      
       // Alt + P: Pause/Resume
-      else if (e.altKey && e.key === 'p') {
+      if (e.altKey && e.key === 'p') {
         e.preventDefault();
         if (tts.isPaused) {
           tts.resume();
@@ -139,65 +145,61 @@ export const TTSProvider = ({ children, enabled = false, autoStart = false }) =>
           tts.pause();
         }
       }
+      
       // Alt + F: Read focused element
-      else if (e.altKey && e.key === 'f') {
+      if (e.altKey && e.key === 'f') {
         e.preventDefault();
         readFocusedElement();
+      }
+      
+      // Alt + H: Help (read shortcuts)
+      if (e.altKey && e.key === 'h') {
+        e.preventDefault();
+        tts.speak(
+          "Keyboard shortcuts: " +
+          "Alt plus R to read page content. " +
+          "Alt plus S to stop reading. " +
+          "Alt plus P to pause or resume. " +
+          "Alt plus F to read focused element. " +
+          "Alt plus H to hear these shortcuts again."
+        );
+      }
+      
+      // Alt + T: Toggle TTS
+      if (e.altKey && e.key === 't') {
+        e.preventDefault();
+        toggleTTS();
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isEnabled, tts, readPageContent, readFocusedElement]);
+  }, [isEnabled, tts, readPageContent, readFocusedElement, toggleTTS]);
 
-  /**
-   * Process reading queue
-   */
+  // Auto-read on navigation
   useEffect(() => {
-    if (readingQueue.length > 0 && !tts.isSpeaking) {
-      const nextContent = readingQueue[0];
-      setReadingQueue(prev => prev.slice(1));
-      tts.speak(nextContent);
+    if (autoRead && isEnabled) {
+      // Delay to allow page to render
+      const timer = setTimeout(() => {
+        const heading = document.querySelector('h1');
+        if (heading) {
+          tts.speak(`Page loaded: ${heading.textContent}`);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [readingQueue, tts]);
-
-  /**
-   * Announce navigation changes
-   */
-  const announceNavigation = useCallback((message) => {
-    if (isEnabled && tts.isSupported) {
-      readContent(message, 'high');
-    }
-  }, [isEnabled, tts, readContent]);
-
-  /**
-   * Read form validation errors
-   */
-  const announceError = useCallback((error) => {
-    if (isEnabled && tts.isSupported) {
-      readContent(`Error: ${error}`, 'immediate');
-    }
-  }, [isEnabled, tts, readContent]);
-
-  /**
-   * Read success messages
-   */
-  const announceSuccess = useCallback((message) => {
-    if (isEnabled && tts.isSupported) {
-      readContent(`Success: ${message}`, 'high');
-    }
-  }, [isEnabled, tts, readContent]);
+  }, [autoRead, isEnabled, tts]);
 
   const value = {
-    // TTS Hook exports
-    ...tts,
+    // TTS instance
+    tts,
     
-    // Context specific state
+    // State
     isEnabled,
-    hasUserConsent,
     showWelcomePopup,
     autoRead,
-    currentReadingElement,
+    currentlyReading,
     
     // Actions
     enableTTS,
@@ -207,14 +209,10 @@ export const TTSProvider = ({ children, enabled = false, autoStart = false }) =>
     setAutoRead,
     
     // Reading functions
-    readContent,
     readPageContent,
     readFocusedElement,
-    
-    // Announcements
     announceNavigation,
-    announceError,
-    announceSuccess,
+    readNotification,
   };
 
   return (
