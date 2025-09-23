@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Able-D Demo Frontend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Able-D</h1>
+      <nav class="nav">
+        <button id="nav-student" class="nav-btn" aria-controls="student-section">Student</button>
+        <button id="nav-teacher" class="nav-btn" aria-controls="teacher-section">Teacher</button>
+        <button id="nav-notes" class="nav-btn" aria-controls="notes-section">Upload</button>
+        <button id="nav-learn" class="nav-btn" aria-controls="learn-section">Learn</button>
+      </nav>
+      <div class="userbar">
+        <span id="user-label" class="muted"></span>
+        <button id="btn-logout" class="nav-btn small hidden">Logout</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Student Auth -->
+      <section id="student-section" class="card hidden" aria-labelledby="nav-student">
+        <h2>Student</h2>
+        <form id="student-login-form" class="form">
+          <div class="form-row">
+            <label>Email
+              <input type="email" name="email" required>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Password
+              <input type="password" name="password" required minlength="6">
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Login</button>
+          </div>
+          <p class="hint">Use existing backend endpoints: /api/auth/student/login</p>
+        </form>
+        <div class="status" id="student-status" role="status" aria-live="polite"></div>
+
+        <div id="student-info" class="result hidden">
+          <strong>Logged in as:</strong>
+          <div>Email: <span id="student-email"></span></div>
+          <div>Name: <span id="student-name"></span></div>
+          <div>Type: <span id="student-type-label" class="badge"></span></div>
+        </div>
+      </section>
+
+      <!-- Teacher Auth -->
+      <section id="teacher-section" class="card hidden" aria-labelledby="nav-teacher">
+        <h2>Teacher</h2>
+        <form id="teacher-login-form" class="form">
+          <div class="form-row">
+            <label>Email
+              <input type="email" name="email" required>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Password
+              <input type="password" name="password" required minlength="6">
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Login</button>
+          </div>
+          <p class="hint">Uses /api/auth/teacher/login</p>
+        </form>
+        <div class="status" id="teacher-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <!-- Teacher Upload -->
+      <section id="notes-section" class="card hidden" aria-labelledby="nav-notes">
+        <h2>Teacher: Upload Notes</h2>
+        <form id="upload-form" class="form" enctype="multipart/form-data">
+          <div class="grid-2">
+            <div class="form-row">
+              <label>School
+                <input type="text" name="school" placeholder="DemoSchool">
+              </label>
+            </div>
+            <div class="form-row">
+              <label>Class
+                <input type="text" name="class" required>
+              </label>
+            </div>
+            <div class="form-row">
+              <label>Subject
+                <input type="text" name="subject" required>
+              </label>
+            </div>
+            <div class="form-row">
+              <label>Topic
+                <input type="text" name="topic" required>
+              </label>
+            </div>
+          </div>
+
+          <fieldset>
+            <legend>Upload Type</legend>
+            <label class="inline">
+              <input type="radio" name="sourceType" value="document" checked> Document
+            </label>
+            <label class="inline">
+              <input type="radio" name="sourceType" value="audio"> Audio
+            </label>
+          </fieldset>
+
+          <div id="doc-input" class="form-row">
+            <label>Document
+              <input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt">
+            </label>
+          </div>
+          <div id="audio-input" class="form-row hidden">
+            <label>Audio
+              <input type="file" name="audio" accept="audio/*">
+            </label>
+            <label>Language
+              <input type="text" name="language" placeholder="en-US">
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit">Upload</button>
+          </div>
+          <p class="hint">Endpoint: /api/teacher/upload (Bearer JWT required)</p>
+        </form>
+        <div class="status" id="upload-status" role="status" aria-live="polite"></div>
+
+        <div id="upload-result" class="result hidden"></div>
+      </section>
+
+      <!-- Student Learn Page -->
+      <section id="learn-section" class="card hidden" aria-labelledby="nav-learn">
+        <h2>Learn</h2>
+        <form id="learn-ai-form" class="form">
+          <div class="form-row">
+            <label>Paste any text to adapt
+              <textarea name="text" rows="4" placeholder="Paste content here..."></textarea>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Adapt for Me</button>
+          </div>
+        </form>
+        <div class="result hidden" id="learn-result">
+          <h3>Adapted Content</h3>
+          <pre id="learn-output"></pre>
+        </div>
+      </section>
+    </main>
+
+    <template id="note-template">
+      <article class="note">
+        <h3></h3>
+        <p class="meta"></p>
+        <div class="student-primary hidden">
+          <strong>For you:</strong>
+          <div class="primary"></div>
+        </div>
+        <details>
+          <summary>Base Text</summary>
+          <pre class="base-text"></pre>
+        </details>
+        <details>
+          <summary>Dyslexie Variant</summary>
+          <pre class="dyslexie-text"></pre>
+        </details>
+        <details>
+          <summary>AI Adapted (on-demand)</summary>
+          <pre class="ai-adapted-text"></pre>
+        </details>
+        <div class="audio-wrap hidden">
+          <audio controls></audio>
+        </div>
+        <div class="form-actions">
+          <button class="btn-adapt" type="button">Adapt with AI</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="config.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+  </html>
+
+
