@@ -3,13 +3,25 @@ import React from 'react';
 
 const HomeIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>;
 const ExitIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>;
+const CloseIcon = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"></path></svg>;
 
-export default function Sidebar({ isSidebarOpen, setActiveView, darkMode, setDarkMode }) {
+export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, setActiveView, darkMode, setDarkMode }) {
   const buttonClasses = `flex items-center w-full px-4 py-3 space-x-4 rounded-xl transition-colors duration-300 ${
     darkMode
       ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
       : 'text-gray-600 hover:bg-white/50 hover:text-gray-900'
   }`;
+
+  // NEW: A single handler for all sidebar button clicks
+  const handleSidebarAction = (action) => {
+    // Perform the button's primary action
+    action();
+
+    // If on a mobile-sized screen, close the sidebar
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   return (
     <div className={`fixed top-0 left-0 z-40 flex flex-col justify-between w-64 h-screen p-4 backdrop-blur-xl border-r transition-transform duration-300 ease-in-out ${
@@ -19,8 +31,19 @@ export default function Sidebar({ isSidebarOpen, setActiveView, darkMode, setDar
             ? "bg-gray-900/30 border-gray-700/50"
             : "bg-white/30 border-gray-200/50"
     }`}>
+      
+      <button
+        onClick={() => setIsSidebarOpen(false)}
+        className={`absolute top-5 right-5 p-2 rounded-full transition-all ${
+          darkMode ? 'text-white hover:bg-white/10' : 'text-gray-800 hover:bg-black/10'
+        }`}
+        aria-label="Close sidebar"
+      >
+        <CloseIcon />
+      </button>
+
       <div>
-        <div className="flex items-center space-x-3 p-2 mb-10 mt-12">
+        <div className="flex items-center space-x-3 p-2 mb-10 mt-2">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
                 darkMode
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600"
@@ -35,7 +58,14 @@ export default function Sidebar({ isSidebarOpen, setActiveView, darkMode, setDar
 
         <ul>
           <li>
-            <button onClick={() => setActiveView('menu')} className={buttonClasses}>
+            <button 
+              onClick={() => handleSidebarAction(() => setActiveView('menu'))} 
+              className={`group w-full relative px-4 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-4 ${
+                darkMode
+                  ? "bg-gray-800/50 text-gray-200 hover:bg-gray-700/50"
+                  : "bg-white/50 text-gray-700 hover:bg-white/70"
+              }`}
+            >
               <HomeIcon />
               <span className="font-semibold">Home</span>
             </button>
@@ -45,7 +75,7 @@ export default function Sidebar({ isSidebarOpen, setActiveView, darkMode, setDar
 
       <div className="space-y-4">
         <button
-          onClick={() => setDarkMode(!darkMode)}
+          onClick={() => handleSidebarAction(() => setDarkMode(!darkMode))}
           className={`group w-full relative px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
             darkMode
               ? "bg-gray-800/50 text-gray-200 hover:bg-gray-700/50"
@@ -58,7 +88,7 @@ export default function Sidebar({ isSidebarOpen, setActiveView, darkMode, setDar
           </span>
         </button>
 
-         <button className={buttonClasses}>
+         <button onClick={() => handleSidebarAction(() => setActiveView('menu'))} className={buttonClasses}>
             <ExitIcon />
             <span className="font-semibold">Exit</span>
         </button>

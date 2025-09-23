@@ -5,33 +5,29 @@ import { AdaptiveUIProvider } from "../contexts/AdaptiveUIContext";
 import { AdaptiveLayout } from "../components/adaptive/AdaptiveLayout";
 
 export function meta({}) {
-  return [
-    { title: "Adaptive Learning Platform" },
-    { name: "description", content: "Accessible education for all students" },
-  ];
+  return [
+    { title: "Adaptive Learning Platform" },
+    { name: "description", content: "Accessible education for all students" },
+  ];
 }
 
 export default function Home() {
-<<<<<<< HEAD
-  return <Teacher />;
-=======
-  const { isAuthenticated, user } = useMockAuth();
-  
-  // If not authenticated, show login
-  if (!isAuthenticated) {
-    return <StudentAuth />;
-  }
-  
-  // If authenticated, show dashboard with adaptive UI
-  return (
-    <AdaptiveUIProvider studentType={user?.studentType}>
-      <AdaptiveLayout>
-        <Dashboard 
-          sessionId={user?.id || 'default-session'} 
-          studentType={user?.studentType} 
-        />
-      </AdaptiveLayout>
-    </AdaptiveUIProvider>
-  );
->>>>>>> 43f9fdd4112db2066d9a885810a3cec228fde365
+  const { isAuthenticated, user } = useMockAuth();
+  
+  // If not authenticated, show login
+  if (!isAuthenticated) {
+    return <StudentAuth />;
+  }
+  
+  // If authenticated, show dashboard with adaptive UI
+  return (
+    <AdaptiveUIProvider studentType={user?.studentType}>
+      <AdaptiveLayout>
+        <Dashboard 
+          sessionId={user?.id || 'default-session'} 
+          studentType={user?.studentType} 
+        />
+      </AdaptiveLayout>
+    </AdaptiveUIProvider>
+  );
 }
