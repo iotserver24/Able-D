@@ -76,6 +76,26 @@ Selection rules:
 - If `studentType=dyslexie` and variant exists → use it; else fall back to base `text`.
 - Always include `audioUrl` when available.
 
+## Q&A from Stored Notes
+
+### POST /api/students/qna
+Headers: `Authorization: Bearer <JWT>`
+Body (JSON):
+```json
+{
+  "school": "DemoSchool",
+  "class": "10",
+  "subject": "Science",
+  "topic": "Biology",
+  "studentType": "dyslexie",
+  "question": "What causes global warming?"
+}
+```
+Response 200:
+```json
+{ "answer": "...", "steps": "...", "tips": "...", "studentType": "dyslexie", "_metadata": { "generated_at": "..." } }
+```
+
 ## Data Model (notes)
 ```json
 {
