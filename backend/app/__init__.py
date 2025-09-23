@@ -11,6 +11,7 @@ from .routes.stt import stt_bp
 from .routes.tts import tts_bp
 from .routes.auth import auth_bp
 from .routes.subjects import subjects_bp
+from .routes.ai import ai_bp
 
 
 def create_app() -> Flask:
@@ -31,6 +32,7 @@ def create_app() -> Flask:
     app.register_blueprint(tts_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(subjects_bp, url_prefix="/api")
+    app.register_blueprint(ai_bp, url_prefix="/api")
 
     return app
 
