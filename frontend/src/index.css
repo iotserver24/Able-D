@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Able-D Adaptive Learning Platform Design System
+   All colors MUST be HSL. Accessibility-first design with student type colors.
+*/
+
+@layer base {
+  :root {
+    /* Base colors - Clean, accessible foundation */
+    --background: 0 0% 100%;
+    --foreground: 220 15% 15%;
+    
+    /* Card components */
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
+    
+    /* Popover components */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
+    
+    /* Primary brand - Deep blue for trust and professionalism */
+    --primary: 220 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Soft gray for supporting elements */
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 220 15% 15%;
+    
+    /* Muted - Subtle backgrounds and text */
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 15% 50%;
+    
+    /* Accent - Highlight color */
+    --accent: 220 15% 94%;
+    --accent-foreground: 220 15% 15%;
+    
+    /* Destructive - Error states */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Form elements */
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 220 70% 45%;
+    
+    /* Student type colors - Accessibility focused */
+    --visually-impaired: 217 91% 60%;      /* Blue - trust, reliability */
+    --visually-impaired-light: 217 91% 95%;
+    --visually-impaired-dark: 217 91% 40%;
+    
+    --hearing-impaired: 142 70% 45%;       /* Green - growth, clarity */
+    --hearing-impaired-light: 142 70% 95%;
+    --hearing-impaired-dark: 142 70% 35%;
+    
+    --speech-impaired: 262 70% 55%;        /* Purple - creativity, expression */
+    --speech-impaired-light: 262 70% 95%;
+    --speech-impaired-dark: 262 70% 40%;
+    
+    --slow-learner: 32 95% 55%;            /* Orange - energy, encouragement */
+    --slow-learner-light: 32 95% 95%;
+    --slow-learner-dark: 32 95% 45%;
+    
+    /* Success and warning states */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 95% 55%;
+    --warning-foreground: 0 0% 100%;
+    
+    /* High contrast mode colors */
+    --high-contrast-bg: 0 0% 100%;
+    --high-contrast-fg: 0 0% 0%;
+    --high-contrast-border: 0 0% 0%;
+    
+    /* Gradients for visual appeal */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(220 70% 45%));
+    --gradient-success: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 35%));
+    --gradient-warm: linear-gradient(135deg, hsl(32 95% 55%), hsl(45 95% 55%));
+    
+    /* Shadows for depth */
+    --shadow-soft: 0 2px 10px hsl(220 15% 15% / 0.1);
+    --shadow-medium: 0 4px 20px hsl(220 15% 15% / 0.15);
+    --shadow-strong: 0 8px 30px hsl(220 15% 15% / 0.2);
+    
+    /* Animation and transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Border radius */
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode colors - accessibility maintained */
+    --background: 220 15% 8%;
+    --foreground: 0 0% 95%;
+    
+    --card: 220 15% 10%;
+    --card-foreground: 0 0% 95%;
+    
+    --popover: 220 15% 10%;
+    --popover-foreground: 0 0% 95%;
+    
+    --primary: 217 91% 70%;
+    --primary-foreground: 220 15% 8%;
+    
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 15% 65%;
+    
+    --accent: 220 15% 22%;
+    --accent-foreground: 0 0% 95%;
+    
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 217 91% 70%;
+    
+    /* Student type colors adjusted for dark mode */
+    --visually-impaired: 217 91% 70%;
+    --visually-impaired-light: 217 91% 15%;
+    --visually-impaired-dark: 217 91% 80%;
+    
+    --hearing-impaired: 142 70% 55%;
+    --hearing-impaired-light: 142 70% 15%;
+    --hearing-impaired-dark: 142 70% 70%;
+    
+    --speech-impaired: 262 70% 65%;
+    --speech-impaired-light: 262 70% 15%;
+    --speech-impaired-dark: 262 70% 75%;
+    
+    --slow-learner: 32 95% 65%;
+    --slow-learner-light: 32 95% 15%;
+    --slow-learner-dark: 32 95% 75%;
+    
+    /* High contrast mode for dark theme */
+    --high-contrast-bg: 0 0% 0%;
+    --high-contrast-fg: 0 0% 100%;
+    --high-contrast-border: 0 0% 100%;
+    
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 70%), hsl(220 70% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(142 70% 55%), hsl(142 70% 45%));
+    --gradient-warm: linear-gradient(135deg, hsl(32 95% 65%), hsl(45 95% 65%));
+    
+    /* Dark mode shadows */
+    --shadow-soft: 0 2px 10px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 20px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 8px 30px hsl(0 0% 0% / 0.5);
+  }
+  
+  /* High contrast mode utilities */
+  .high-contrast {
+    --background: var(--high-contrast-bg);
+    --foreground: var(--high-contrast-fg);
+    --border: var(--high-contrast-border);
+    --card: var(--high-contrast-bg);
+    --card-foreground: var(--high-contrast-fg);
+  }
+  
+  /* Font size utilities for accessibility */
+  .font-size-normal { font-size: 1rem; }
+  .font-size-large { font-size: 1.125rem; }
+  .font-size-extra-large { font-size: 1.25rem; }
+  
+  /* Reduced motion utilities */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* Focus visible utilities for keyboard navigation */
+  .focus-visible-ring {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
