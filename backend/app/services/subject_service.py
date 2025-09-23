@@ -17,14 +17,28 @@ def ensure_indexes() -> None:
     col.create_index("subjectName")
 
 
+def default_subjects() -> List[Dict]:
+    return [
+        {"subjectName": "english"},
+        {"subjectName": "science"},
+        {"subjectName": "social"},
+    ]
+
+
 def list_subjects_for_class_and_school(school: str, class_name: str) -> List[Dict]:
     if not school or not class_name:
-        return []
+        # When missing identifiers, return universal defaults
+        return default_subjects()
     ensure_indexes()
     cursor = _subjects().find(
         {"school": school, "class": class_name},
         {"_id": 0, "subjectName": 1, "addedBy": 1, "class": 1, "school": 1},
     ).sort("subjectName", 1)
-    return list(cursor)
+    items = list(cursor)
+    if items:
+        return items
+
+    # Universal defaults (same for every school/class)
+    return default_subjects()
 
 

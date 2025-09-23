@@ -6,12 +6,15 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .config import Config
+from .services.firebase_admin import initialize_firebase_admin
 from .routes.health import health_bp
 from .routes.extract_text import extract_text_bp
 from .routes.stt import stt_bp
 from .routes.tts import tts_bp
 from .routes.auth import auth_bp
 from .routes.subjects import subjects_bp
+from .routes.teacher_upload import teacher_upload_bp
+from .routes.test_ui import test_ui_bp
 
 
 def create_app() -> Flask:
@@ -28,6 +31,13 @@ def create_app() -> Flask:
     # Initialize JWT Manager
     JWTManager(app)
 
+    # Initialize Firebase Admin (if credentials provided)
+    try:
+        initialize_firebase_admin(app)
+    except Exception:
+        # Avoid crashing app startup if Firebase is not configured yet
+        pass
+
     # Blueprints
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(extract_text_bp, url_prefix="/api")
@@ -35,6 +45,8 @@ def create_app() -> Flask:
     app.register_blueprint(tts_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(subjects_bp, url_prefix="/api")
+    app.register_blueprint(teacher_upload_bp, url_prefix="/api")
+    app.register_blueprint(test_ui_bp, url_prefix="/api")
 
     return app
 
