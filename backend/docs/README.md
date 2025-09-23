@@ -116,3 +116,6 @@ curl http://127.0.0.1:8080/api/health
 - CORS is enabled; restrict origins for production.
 - Upload limit is 16 MB by default; change via `MAX_CONTENT_LENGTH` in config or env.
 - ffmpeg is required for non-WAV formats; Dockerfile installs it by default.
+
+
+curl.exe --% -X POST http://127.0.0.1:5000/api/tts -H "Content-Type: application/json" -d "{\"text\":\"Your text here\"}" --output speech.mp3

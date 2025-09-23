@@ -5,10 +5,10 @@ import { AdaptiveUIProvider } from "../contexts/AdaptiveUIContext";
 import { AdaptiveLayout } from "../components/adaptive/AdaptiveLayout";
 
 export function meta({}) {
-  return [
-    { title: "Adaptive Learning Platform" },
-    { name: "description", content: "Accessible education for all students" },
-  ];
+  return [
+    { title: "Adaptive Learning Platform" },
+    { name: "description", content: "Accessible education for all students" },
+  ];
 }
 
 export default function Home() {
