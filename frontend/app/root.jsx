@@ -8,8 +8,7 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from "react-router";
-import { MsalProvider } from "@azure/msal-react";
-import { PublicClientApplication } from "@azure/msal-browser";
+import { MockAuthProvider } from "./constants/MockAuthContext";
 import "./app.css";
 
 export function Layout({ children }) {
@@ -31,36 +30,11 @@ export function Layout({ children }) {
 }
 
 export default function App() {
-  const [msalInstance, setMsalInstance] = useState(null);
-
-  useEffect(() => {
-    const instance = new PublicClientApplication({
-      auth: {
-        clientId: "YOUR_CLIENT_ID",
-        authority: "https://YOUR_TENANT.b2clogin.com/YOUR_TENANT.onmicrosoft.com/B2C_1_signupsignin",
-        knownAuthorities: ["YOUR_TENANT.b2clogin.com"],
-        redirectUri: window.location.origin,
-      },
-      cache: {
-        cacheLocation: "sessionStorage",
-        storeAuthStateInCookie: false,
-      },
-    });
-    setMsalInstance(instance);
-  }, []);
-
-  if (!msalInstance) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Loading authentication...</p>
-      </div>
-    );
-  }
-
+  // Using Mock Authentication for development
   return (
-    <MsalProvider instance={msalInstance}>
+    <MockAuthProvider>
       <Outlet />
-    </MsalProvider>
+    </MockAuthProvider>
   );
 }
 
