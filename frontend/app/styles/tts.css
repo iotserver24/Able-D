@@ -1,0 +1,174 @@
+/* TTS Component Animations and Styles */
+
+/* Slide up animation for TTS controller */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Pulse animation for speaking indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* High contrast mode for visually impaired */
+.high-contrast {
+  filter: contrast(1.2);
+}
+
+.high-contrast button {
+  border: 2px solid currentColor;
+}
+
+.high-contrast input,
+.high-contrast textarea {
+  border-width: 2px;
+  border-color: #000;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* TTS Welcome Popup styles */
+.tts-welcome-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Focus styles for keyboard navigation */
+.tts-focusable:focus {
+  outline: 3px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Voice wave animation */
+@keyframes voiceWave {
+  0% {
+    transform: scaleY(1);
+  }
+  25% {
+    transform: scaleY(1.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  75% {
+    transform: scaleY(1.3);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.voice-wave {
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: currentColor;
+  margin: 0 2px;
+  animation: voiceWave 0.8s ease-in-out infinite;
+}
+
+.voice-wave:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.voice-wave:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.voice-wave:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.voice-wave:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* TTS Controller positioning */
+.tts-controller-fixed {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Tooltip styles */
+.tts-tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* Loading spinner for TTS */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tts-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+/* Keyboard shortcut badge */
+.kbd-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.85em;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+}

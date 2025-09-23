@@ -3,6 +3,7 @@ from flask import Flask
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 
 from .config import Config
 from .routes.health import health_bp
@@ -24,6 +25,9 @@ def create_app() -> Flask:
 
     # CORS (adjust origins if needed)
     CORS(app)
+    
+    # Initialize JWT Manager
+    JWTManager(app)
 
     # Blueprints
     app.register_blueprint(health_bp, url_prefix="/api")
