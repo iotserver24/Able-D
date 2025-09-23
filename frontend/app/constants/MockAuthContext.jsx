@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const MockAuthContext = createContext();
 
@@ -27,22 +27,35 @@ export const MockAuthProvider = ({ children }) => {
     setUser(mockUser);
     setIsAuthenticated(true);
     
-    // Store in localStorage for persistence
-    localStorage.setItem('mockUser', JSON.stringify(mockUser));
+    // Store in localStorage for persistence (only on client side)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('mockUser', JSON.stringify(mockUser));
+    }
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('mockUser');
+    
+    // Remove from localStorage (only on client side)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('mockUser');
+    }
   }, []);
 
-  // Check for existing session on mount
-  useState(() => {
-    const storedUser = localStorage.getItem('mockUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+  // Check for existing session on mount (client side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storedUser = localStorage.getItem('mockUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+        }
+      }
     }
   }, []);
 
