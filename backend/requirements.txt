@@ -16,3 +16,7 @@ passlib[bcrypt]>=1.7.4
 # Firebase Admin SDK
 firebase-admin>=6.5.0
 
+# AI - Gemini clients
+google-genai
+google-generativeai
+
