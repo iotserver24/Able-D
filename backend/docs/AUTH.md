@@ -12,7 +12,9 @@ Body:
   "name": "Student Name (Required)",
   "class": "Class from 1-12 (Required)",
   "subject": "Subject e.g. Mathematics (Required)",
-  "school": "School name (Required)"
+  "school": "School name (Required)",
+  "email": "student@example.com (Required)",
+  "password": "password123 (Required, min 6 chars)"
 }
 ```
 
@@ -27,59 +29,12 @@ Response 201:
     "class": "Grade 10",
     "subject": "Mathematics",
     "school": "Test High School",
+    "email": "john@example.com",
     "anonymousId": "random_hex_string",
     "createdAt": "2025-09-23T10:25:47.329367Z",
     "updatedAt": "2025-09-23T10:25:47.329367Z"
   },
   "accessToken": "JWT"
-}
-```
-
-Notes:
-- Creates a new student account with all required fields validated.
-- Allowed studentType values: `visually_impaired`, `hearing_impaired`, `speech_impaired`, `slow_learner`.
-- Returns both `_id` and `anonymousId` for login purposes.
-- JWT identity includes: `role`, `studentType`, `class`, `subject`, `school`, `id`.
-
-## Student Login
-POST `/auth/student/login`
-
-Body (choose one):
-```json
-{
-  "studentId": "student_mongodb_id_here"
-}
-```
-OR
-```json
-{
-  "anonymousId": "anonymous_id_from_registration"
-}
-```
-
-Response 200:
-```json
-{
-  "user": {
-    "_id": "student_id_here",
-    "role": "student",
-    "studentType": "visually_impaired",
-    "name": "John Doe",
-    "class": "Grade 10",
-    "subject": "Mathematics",
-    "school": "Test High School",
-    "anonymousId": "random_hex_string",
-    "createdAt": "2025-09-23T10:25:47.329367Z",
-    "updatedAt": "2025-09-23T10:25:47.329367Z"
-  },
-  "accessToken": "JWT"
-}
-```
-
-Response 404 (Student not found):
-```json
-{
-  "error": "Student not found"
 }
 ```
 
@@ -106,15 +61,87 @@ Response 400 (Validation errors):
 ```
 ```json
 {
+  "error": "Email is required"
+}
+```
+```json
+{
+  "error": "Password must be at least 6 characters"
+}
+```
+```json
+{
+  "error": "Invalid email"
+}
+```
+```json
+{
+  "error": "Email already registered"
+}
+```
+```json
+{
   "error": "Invalid student type"
 }
 ```
 
 Notes:
-- Authenticates existing students using either their MongoDB `_id` or `anonymousId`.
+- Creates a new student account with email and password authentication.
+- Allowed studentType values: `visually_impaired`, `hearing_impaired`, `speech_impaired`, `slow_learner`.
+- Email must be unique across all users (students and teachers).
+- Password is hashed using bcrypt before storage.
+- JWT identity includes: `role`, `studentType`, `class`, `subject`, `school`, `id`.
+
+## Student Login
+POST `/auth/student/login`
+
+Body:
+```json
+{
+  "email": "student@example.com",
+  "password": "password123"
+}
+```
+
+Response 200:
+```json
+{
+  "user": {
+    "_id": "student_id_here",
+    "role": "student",
+    "studentType": "visually_impaired",
+    "name": "John Doe",
+    "class": "Grade 10",
+    "subject": "Mathematics",
+    "school": "Test High School",
+    "email": "john@example.com",
+    "anonymousId": "random_hex_string",
+    "createdAt": "2025-09-23T10:25:47.329367Z",
+    "updatedAt": "2025-09-23T10:25:47.329367Z"
+  },
+  "accessToken": "JWT"
+}
+```
+
+Response 401 (Invalid credentials):
+```json
+{
+  "error": "Invalid email or password"
+}
+```
+
+Response 400 (Missing fields):
+```json
+{
+  "error": "Email and password are required"
+}
+```
+
+Notes:
+- Authenticates students using email and password.
 - Students must be registered first using the `/auth/student/register` endpoint.
 - Use the returned JWT in `Authorization: Bearer <token>` for subsequent requests.
-- All fields (name, class, subject, school) are required for registration.
+- Password verification is done using bcrypt hash comparison.
 
 ## Teacher Register
 POST `/auth/teacher/register`
@@ -122,36 +149,108 @@ POST `/auth/teacher/register`
 Body:
 ```json
 {
-  "name": "Alice",
-  "email": "alice@school.edu",
-  "password": "secret123",
-  "school": "School name"
+  "name": "Alice (Required)",
+  "email": "alice@school.edu (Required)",
+  "password": "secret123 (Required, min 6 chars)",
+  "school": "School name (Optional)"
 }
 ```
 
 Response 201:
 ```json
 {
-  "user": { "role": "teacher", "name": "Alice", "email": "alice@school.edu", "school": "School name" },
+  "user": { 
+    "role": "teacher", 
+    "name": "Alice", 
+    "email": "alice@school.edu", 
+    "school": "School name",
+    "_id": "teacher_id_here",
+    "createdAt": "2025-09-23T10:25:46.983166Z",
+    "updatedAt": "2025-09-23T10:25:46.983166Z"
+  },
   "accessToken": "JWT"
 }
 ```
+
+Response 400 (Validation errors):
+```json
+{
+  "error": "Name is required"
+}
+```
+```json
+{
+  "error": "Email is required"
+}
+```
+```json
+{
+  "error": "Password must be at least 6 characters"
+}
+```
+```json
+{
+  "error": "Invalid email"
+}
+```
+```json
+{
+  "error": "Email already registered"
+}
+```
+
+Notes:
+- Creates a new teacher account with email and password authentication.
+- Email must be unique across all users (students and teachers).
+- Password is hashed using bcrypt before storage.
+- JWT identity includes: `role`, `email`, `school`.
 
 ## Teacher Login
 POST `/auth/teacher/login`
 
 Body:
 ```json
-{ "email": "alice@school.edu", "password": "secret123" }
+{ 
+  "email": "alice@school.edu (Required)", 
+  "password": "secret123 (Required)" 
+}
 ```
 
 Response 200:
 ```json
 {
-  "user": { "role": "teacher", "name": "Alice", "email": "alice@school.edu", "school": "School name" },
+  "user": { 
+    "role": "teacher", 
+    "name": "Alice", 
+    "email": "alice@school.edu", 
+    "school": "School name",
+    "_id": "teacher_id_here",
+    "createdAt": "2025-09-23T10:25:46.983166Z",
+    "updatedAt": "2025-09-23T10:25:46.983166Z"
+  },
   "accessToken": "JWT"
 }
 ```
+
+Response 401 (Invalid credentials):
+```json
+{
+  "error": "Invalid email or password"
+}
+```
+
+Response 400 (Missing fields):
+```json
+{
+  "error": "Email and password are required"
+}
+```
+
+Notes:
+- Authenticates teachers using email and password.
+- Teachers must be registered first using the `/auth/teacher/register` endpoint.
+- Use the returned JWT in `Authorization: Bearer <token>` for subsequent requests.
+- Password verification is done using bcrypt hash comparison.
 
 ## Verify Token
 GET `/auth/verify`
