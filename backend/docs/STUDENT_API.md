@@ -96,6 +96,18 @@ Response 200:
 { "answer": "...", "steps": "...", "tips": "...", "studentType": "dyslexie", "_metadata": { "generated_at": "..." } }
 ```
 
+### POST /api/students/qna-audio (blind-friendly)
+Multipart form fields:
+- `school`, `class` (or `className`), `subject`, `topic`
+- `studentType` (e.g., `vision|hearing|speech|dyslexie`)
+- `language` (optional, default `en-US`)
+- `audio` (question audio file)
+
+Response 200:
+```json
+{ "answer": "...", "steps": "...", "tips": "...", "studentType": "...", "audioUrl": "https://files.catbox.moe/<id>.mp3", "question": "<recognized text>", "_metadata": { "generated_at": "..." } }
+```
+
 ## Data Model (notes)
 ```json
 {
