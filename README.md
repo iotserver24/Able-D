@@ -36,7 +36,7 @@ Able-D/
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Prashithshetty/Able-D
    cd Able-D
    ```
 
@@ -83,9 +83,6 @@ Able-D/
 
 - [Frontend Guide](frontend/README.md)
 - [Backend Guide](backend/README.md)
-- [API Reference](backend/docs/API_REFERENCE.md)
-- [Database Guide](backend/docs/DATABASE_GUIDE.md)
-- [Authentication Guide](backend/docs/AUTH.md)
 
 ## 🛠️ Development
 
