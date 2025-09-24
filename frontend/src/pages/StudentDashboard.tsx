@@ -15,6 +15,7 @@ import AudioPlayer from '@/components/audio/AudioPlayer';
 import WordHighlightable from '@/components/audio/WordHighlightable';
 import EnhancedTextDisplay from '@/components/audio/EnhancedTextDisplay';
 import VisuallyImpairedInterface from '@/components/audio/VisuallyImpairedInterface';
+import DyslexiaSupportInterface from '@/components/audio/DyslexiaSupportInterface';
 
 interface Topic {
   topic: string;
@@ -366,6 +367,76 @@ const StudentDashboard = () => {
         />
         
         {/* Hidden audio element for visually impaired students */}
+        <audio
+          ref={audioRef}
+          preload="metadata"
+          className="hidden"
+          onEnded={() => setIsAudioPlaying(false)}
+        />
+      </>
+    );
+  }
+
+  // Show dyslexia support interface for slow_learner students
+  if (user?.studentType === 'slow_learner') {
+    return (
+      <>
+        <DyslexiaSupportInterface
+          subjects={subjects}
+          topics={topics}
+          currentNote={currentNote}
+          selectedSubject={selectedSubject}
+          selectedTopic={selectedTopic}
+          onSubjectSelect={handleSubjectSelect}
+          onTopicSelect={handleTopicSelect}
+          onPlayAudio={handlePlayAudio}
+          onPauseAudio={handlePauseAudio}
+          onStopAudio={handleStopAudio}
+          onLogout={logout}
+          isPlaying={isAudioPlaying}
+          user={{
+            name: user?.name || '',
+            class: user?.class,
+            studentType: user?.studentType
+          }}
+          onAskQuestion={async (question: string) => {
+            if (!user?.token || !user?.class || !selectedSubject || !selectedTopic || !user?.studentType) {
+              toast({
+                title: 'Error',
+                description: 'Please select a topic first.',
+                variant: 'destructive',
+              });
+              return;
+            }
+
+            setIsLoadingQnA(true);
+            try {
+              const response = await generateQnA(
+                'DemoSchool',
+                user.class,
+                selectedSubject,
+                selectedTopic,
+                user.studentType,
+                question,
+                user.token
+              );
+              setAnswer(response.answer);
+            } catch (error) {
+              console.error('Error generating Q&A:', error);
+              toast({
+                title: 'Error',
+                description: 'Failed to generate answer. Please try again.',
+                variant: 'destructive',
+              });
+            } finally {
+              setIsLoadingQnA(false);
+            }
+          }}
+          isLoadingQnA={isLoadingQnA}
+          answer={answer}
+        />
+        
+        {/* Hidden audio element for dyslexia support students */}
         <audio
           ref={audioRef}
           preload="metadata"
