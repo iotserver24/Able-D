@@ -1,3 +1,6 @@
+/* Dyslexia Support Fonts */
+@import url('https://fonts.googleapis.com/css2?family=OpenDyslexic:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -198,6 +201,42 @@
   .focus-visible-ring {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+  }
+
+  /* Dyslexia Support Styles */
+  .dyslexia-font {
+    font-family: 'OpenDyslexic', 'Arial', sans-serif;
+    font-weight: 400;
+  }
+
+  .dyslexia-font-bold {
+    font-family: 'OpenDyslexic', 'Arial', sans-serif;
+    font-weight: 700;
+  }
+
+  .dyslexia-word-capsule {
+    display: inline-block;
+    padding: 2px 6px;
+    margin: 1px;
+    border-radius: 4px;
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    font-family: 'OpenDyslexic', 'Arial', sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: hsl(var(--foreground));
+  }
+
+  .dyslexia-minimal {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dyslexia-minimal .dyslexia-word-capsule {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
   }
 }
 
