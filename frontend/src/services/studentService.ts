@@ -57,6 +57,15 @@ export const getTopics = async (
 ): Promise<TopicsResponse> => {
   const endpoint = `${API_ENDPOINTS.STUDENTS.TOPICS}?school=${encodeURIComponent(school)}&class=${encodeURIComponent(classValue)}&subject=${encodeURIComponent(subject)}`;
   
+  console.log('getTopics called with:', {
+    school,
+    classValue,
+    subject,
+    endpoint,
+    tokenLength: token?.length,
+    tokenStart: token?.substring(0, 20) + '...'
+  });
+  
   return authenticatedApiCall<TopicsResponse>(endpoint, token, {
     method: 'GET',
   });

@@ -57,11 +57,43 @@ const StudentDashboard = () => {
     }
   }, [user]);
 
+  // Test local backend connection
+  useEffect(() => {
+    const testLocalBackend = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/health');
+        console.log('Local backend health check:', { 
+          status: response.status, 
+          ok: response.ok,
+          data: await response.json()
+        });
+      } catch (error) {
+        console.error('Local backend health check failed:', error);
+      }
+    };
+    testLocalBackend();
+  }, []);
+
   const loadTopics = async () => {
-    if (!user?.token || !user?.class || !user?.subject) return;
+    if (!user?.token || !user?.class || !user?.subject) {
+      console.log('Missing required user data:', {
+        hasToken: !!user?.token,
+        class: user?.class,
+        subject: user?.subject,
+        user
+      });
+      return;
+    }
     
     setIsLoadingTopics(true);
     try {
+      console.log('Loading topics with params:', {
+        school: 'DemoSchool',
+        class: user.class,
+        subject: user.subject,
+        hasToken: !!user.token
+      });
+      
       const response = await getTopics(
         'DemoSchool',
         user.class,

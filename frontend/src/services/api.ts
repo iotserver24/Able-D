@@ -38,6 +38,12 @@ export const authenticatedApiCall = async <T = any>(
 ): Promise<T> => {
   const url = buildApiUrl(endpoint);
   
+  console.log('Making authenticated API call:', {
+    url,
+    method: options.method || 'GET',
+    headers: { ...getAuthHeaders(token), ...options.headers }
+  });
+  
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -48,10 +54,19 @@ export const authenticatedApiCall = async <T = any>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('API Error Details:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      errorData,
+      headers: Object.fromEntries(response.headers.entries())
+    });
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('API Success:', { url, result });
+  return result;
 };
 
 // Form data API call function (for file uploads)
