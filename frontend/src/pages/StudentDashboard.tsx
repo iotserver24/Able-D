@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getStudentTypeByValue } from '@/constants/studentTypes';
 import { BookOpen, Volume2, Settings, LogOut, FileText, MessageSquare, Mic, Loader2, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { getSubjects, getTopics, getNotes, generateQnA, Subject } from '@/services/studentService';
+import { getSubjects, getTopics, getNotes, generateQnA, generateQnAAudio, Subject } from '@/services/studentService';
 import { toast } from '@/hooks/use-toast';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import WordHighlightable from '@/components/audio/WordHighlightable';
@@ -57,8 +57,11 @@ const StudentDashboard = () => {
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [isLoadingQnA, setIsLoadingQnA] = useState(false);
+  const [isLoadingQnAAudio, setIsLoadingQnAAudio] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [answerAudioUrl, setAnswerAudioUrl] = useState<string>('');
+  const [audioQuestionFile, setAudioQuestionFile] = useState<File | null>(null);
 
   // Load subjects on component mount
   useEffect(() => {
@@ -258,6 +261,7 @@ const StudentDashboard = () => {
 
   // Audio control functions for visually impaired students
   const audioRef = useRef<HTMLAudioElement>(null);
+  const answerAudioRef = useRef<HTMLAudioElement>(null);
 
   const handlePlayAudio = () => {
     if (currentNote?.audioUrl && audioRef.current) {
@@ -294,6 +298,54 @@ const StudentDashboard = () => {
       audioRef.current.currentTime = 0;
       setIsAudioPlaying(false);
       setCurrentWordIndex(-1);
+    }
+  };
+
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAudioQuestionFile(file);
+  };
+
+  const handleAskAudioQuestion = async () => {
+    if (!audioQuestionFile || !user?.token || !user?.class || !selectedSubject || !selectedTopic || !user?.studentType) {
+      toast({
+        title: 'Error',
+        description: 'Select a topic and choose an audio file first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoadingQnAAudio(true);
+    try {
+      const response = await generateQnAAudio(
+        'DemoSchool',
+        user.class,
+        selectedSubject,
+        selectedTopic,
+        user.studentType,
+        audioQuestionFile,
+        'en-US',
+        user.token
+      );
+      setAnswer(response.answer);
+      setAnswerAudioUrl(response.audioUrl || '');
+      if (response.audioUrl && answerAudioRef.current) {
+        answerAudioRef.current.src = response.audioUrl;
+        // Autoplay if possible
+        answerAudioRef.current.play().catch(() => {
+          /* ignore autoplay restrictions */
+        });
+      }
+    } catch (error) {
+      console.error('Error generating audio Q&A:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate audio answer. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingQnAAudio(false);
     }
   };
 
@@ -725,15 +777,49 @@ const StudentDashboard = () => {
                           </>
                         )}
                       </Button>
+                      {/* Audio Q&A */}
+                      <div className="grid grid-cols-1 gap-2">
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={handleAudioFileChange}
+                        />
+                        <Button
+                          onClick={handleAskAudioQuestion}
+                          disabled={isLoadingQnAAudio || !audioQuestionFile}
+                          className="w-full"
+                          variant="secondary"
+                        >
+                          {isLoadingQnAAudio ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Processing Audio...
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="w-4 h-4 mr-2" />
+                              Ask with Audio
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Answer */}
                     {answer && (
-                      <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="bg-green-50 p-4 rounded-lg space-y-3">
                         <h4 className="font-semibold text-green-900 mb-2">Answer</h4>
                         <div className="whitespace-pre-wrap text-green-800">
                           {answer}
                         </div>
+                        {answerAudioUrl && (
+                          <audio
+                            ref={answerAudioRef}
+                            controls
+                            src={answerAudioUrl}
+                            className="w-full"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
