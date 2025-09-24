@@ -21,12 +21,11 @@ const StudentAuth = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    school: 'DemoSchool',
     class: '',
-    subject: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -56,10 +55,6 @@ const StudentAuth = () => {
 
       if (!formData.class) {
         newErrors.class = 'Class is required';
-      }
-
-      if (!formData.subject) {
-        newErrors.subject = 'Subject is required';
       }
 
       if (!selectedStudentType) {
@@ -216,40 +211,21 @@ const StudentAuth = () => {
                   {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="class">Class</Label>
-                    <Select value={formData.class} onValueChange={(value) => setFormData({ ...formData, class: value })}>
-                      <SelectTrigger className={errors.class ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <SelectItem key={i + 1} value={String(i + 1)}>
-                            Class {i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.class && <p className="text-sm text-destructive">{errors.class}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Select value={formData.subject} onValueChange={(value) => setFormData({ ...formData, subject: value })}>
-                      <SelectTrigger className={errors.subject ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Mathematics">Mathematics</SelectItem>
-                        <SelectItem value="Science">Science</SelectItem>
-                        <SelectItem value="English">English</SelectItem>
-                        <SelectItem value="History">History</SelectItem>
-                        <SelectItem value="Geography">Geography</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.subject && <p className="text-sm text-destructive">{errors.subject}</p>}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <Select value={formData.class} onValueChange={(value) => setFormData({ ...formData, class: value })}>
+                    <SelectTrigger className={errors.class ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>
+                          Class {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.class && <p className="text-sm text-destructive">{errors.class}</p>}
                 </div>
               </>
             )}

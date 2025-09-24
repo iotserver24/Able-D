@@ -16,7 +16,6 @@ const TeacherAuth = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    school: 'DemoSchool',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -1,0 +1,167 @@
+hget backend url from env and dont hardcode
+
+Name: Auth
+POST http://127.0.0.1:5000/api/auth/teacher/register
+BODY:
+{
+  "name": "Teacher Name",
+  "email": "teacher@example.com",
+  "password": "secret123",
+  "school": "DemoSchool"
+}
+REPLY JSON:
+{
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODY1MjY4MSwianRpIjoiZjU0YTRmZDEtMTBjNy00OGIzLWI0ZGEtNDcwNGMxMzBiMWM0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlYWNoZXJAZXhhbXBsZS5jb20iLCJuYmYiOjE3NTg2NTI2ODEsImNzcmYiOiJkMzEyYmZiOS0zMTc4LTRkOWMtOGQxNS04Y2ExMzYzNDQ4ZWQiLCJleHAiOjE3NTg2OTU4ODEsInJvbGUiOiJ0ZWFjaGVyIiwic2Nob29sIjoiRGVtb1NjaG9vbCJ9.MUANdA4itiPzz5AkTtGt7uBq0EKMSFKbWkcvx-OHWsY",
+    "user": {
+        "_id": null,
+        "createdAt": "2025-09-23T18:38:01.049796Z",
+        "email": "teacher@example.com",
+        "name": "Teacher Name",
+        "role": "teacher",
+        "school": "DemoSchool",
+        "updatedAt": "2025-09-23T18:38:01.049814Z"
+    }
+}
+
+Name: Auth
+POST http://127.0.0.1:5000/api/auth/teacher/login
+BODY: 
+{
+  "email": "teacher@example.com",
+  "password": "secret123"
+}
+REPLY JSON:
+{
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODY1Mjk3MSwianRpIjoiYWU2ZDhlNTEtYjc5MC00MDljLTllYWUtNWQzZDFjNGU2NWU4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlYWNoZXJAZXhhbXBsZS5jb20iLCJuYmYiOjE3NTg2NTI5NzEsImNzcmYiOiJjMDExNzI0My0zYmMwLTRjNjUtOWI3Ny01ZGFkMmU0Zjg2MWMiLCJleHAiOjE3NTg2OTYxNzEsInJvbGUiOiJ0ZWFjaGVyIiwic2Nob29sIjoiRGVtb1NjaG9vbCJ9.eEz3oeMgYdaBtQD1xhlsYyMS2s8h_jeAYsB0g0gElfA",
+    "user": {
+        "_id": "68d2debbda441683d688c39d",
+        "createdAt": "2025-09-23T17:54:03.797909Z",
+        "email": "teacher@example.com",
+        "name": "Test Teacher",
+        "role": "teacher",
+        "school": "DemoSchool",
+        "updatedAt": "2025-09-23T17:54:03.797923Z"
+    }
+}
+
+Name: Auth
+GET http://127.0.0.1:5000/api/auth/verify
+Auth Type :
+Bearer Token
+Access Token :
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODY1Mjk3MSwianRpIjoiYWU2ZDhlNTEtYjc5MC00MDljLTllYWUtNWQzZDFjNGU2NWU4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlYWNoZXJAZXhhbXBsZS5jb20iLCJuYmYiOjE3NTg2NTI5NzEsImNzcmYiOiJjMDExNzI0My0zYmMwLTRjNjUtOWI3Ny01ZGFkMmU0Zjg2MWMiLCJleHAiOjE3NTg2OTYxNzEsInJvbGUiOiJ0ZWFjaGVyIiwic2Nob29sIjoiRGVtb1NjaG9vbCJ9.eEz3oeMgYdaBtQD1xhlsYyMS2s8h_jeAYsB0g0gElfA"
+REPLY JSON 
+{
+    "user": "teacher@example.com",
+    "valid": true
+}
+
+Name: Teacher Upload
+POST https://able-d.onrender.com/api/teacher/upload
+Auth Type :
+Bearer Token
+Access Token :
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODY2MTYwMSwianRpIjoiZTZhOTc5ODktZmI2Ni00ZTdlLWI3MWMtNjZhYTdiOTc1MjNlIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlYWNoZXJAZXhhbXBsZS5jb20iLCJuYmYiOjE3NTg2NjE2MDEsImNzcmYiOiI3OWMzZjU1My1iNTRlLTQzNGMtYjQxMy1hNmRmMzAxMzJlNjYiLCJleHAiOjE3NTg3MDQ4MDEsInJvbGUiOiJ0ZWFjaGVyIiwic2Nob29sIjoiRGVtb1NjaG9vbCJ9.eorNBXSzpsNng1H1fN4jwMgAff1vixa-v76sIsQhwNI"
+form-data:
+KEY	VALUE	DESCRIPTION
+school	DemoSchool	
+class	10	
+subject	Science	
+topic	Biology	
+audio	recording.mp3	In the key column, hover and change "Text" to "File". Then click "Select Files" to upload a document (PDF, DOCX) or audio file.
+
+REPLY JSON:
+{
+    "note": {
+        "_id": "68d30c8ce520bedefa9ec2f9",
+        "class": "10",
+        "createdAt": "2025-09-23T21:09:32.458901Z",
+        "meta": {
+            "language": null
+        },
+        "originalFilename": "Recording.mp3",
+        "school": "DemoSchool",
+        "sourceType": "audio",
+        "subject": "Science",
+        "text": "Got it. You basically want a hopscotch postman style that can hit you locally POST API for testing you've got few options depending on the fancy you want it to be. Easiest use hopscotch itself. Go to https://hopscotch.io. You end in the URL bar. Type your local API endpoints like bash Http://localhost 5000 API test. It works as long as browser is running on same machine as your API issue. If you want testing to another device, local won't work, you need to expose it to something. Like Nick Rock or Clovitton alternative tools, Postman desktop app, classic choice, works offline to Bruno or open source platform alternative right? Great and pretty fast. Insomnia. Shut the **** ** *****.",
+        "topic": "Biology",
+        "updatedAt": "2025-09-23T21:09:32.458936Z",
+        "uploadedBy": "teacher@example.com",
+        "variants": {
+            "audioUrl": "https://files.catbox.moe/wldbgt.mp3",
+            "dyslexie": "{\n \"summary\": \"Testing your API (like a website address) can be done in a few ways. Here are some simple options.\",\n \"key_points\": [\n  \"* Hopscotch: Easiest for quick tests.\",\n  \"    * Go to hopscotch.io.\",\n  \"    * Type your API address (like http://localhost:5000/api/test).\",\n  \"    * Only works if your browser and API are on the same computer.\",\n  \"* Postman: A desktop app that works offline.\",\n  \"* Bruno/Insomnia: Other options for testing.\",\n  \"* Testing on another device: Localhost won't work. You need a tool to expose your API.\"\n ]\n}",
+            "meta": {
+                "dyslexieTips": "* Read slowly: Take your time to understand each sentence.\n* Highlight: Use a highlighter to mark important words.\n* Repeat: Read the information more than once.\n* Ask for help: If you're stuck, ask your teacher or educational assistant."
+            }
+        }
+    }
+}
+
+Name: AI Services 
+POST http://127.0.0.1:5000/api/ai
+Notes mode
+Body Tab: (raw, JSON):
+{
+  "mode": "notes",
+  "studentType": "dyslexie",
+  "text": "This is a long and complex sentence to test the AI's ability to simplify content for students with dyslexia."
+}
+REPLY JSON:
+{
+    "_metadata": {
+        "generated_at": "2025-09-23T19:27:37.611786",
+        "model": "gemini-2.0-flash",
+        "processing_time": 3.86
+    },
+    "content": "{\n  \"summary\": \"Long sentences can be hard to read. We will make them shorter and easier.\",\n  \"key_points\": [\n    \"Long sentences are hard.\",\n    \"We will use short sentences.\",\n    \"Short sentences are easier to read.\",\n    \"We will use simple words.\"\n  ]\n}",
+    "studentType": "dyslexia",
+    "tips": "{\n  \"study_tips\": [\n    \"Read aloud slowly.\",\n    \"Use a ruler to follow the lines.\",\n    \"Take breaks often.\",\n    \"Ask for help when you need it.\",\n    \"Use colored overlays if they help.\"\n  ]\n}"
+}
+
+Name: AI Services 
+POST http://127.0.0.1:5000/api/ai
+Q&A mode
+Body Tab: (raw, JSON):
+{
+  "mode": "qna",
+  "studentType": "vision",
+  "notes": "The Earth revolves around the Sun. This journey takes approximately 365.25 days, which is why we have a leap year every four years.",
+  "question": "Why do we have leap years?"
+}
+REPLY JSON:
+{
+    "_metadata": {
+        "generated_at": "2025-09-23T19:32:01.320016",
+        "model": "gemini-2.0-flash",
+        "processing_time": 2.94
+    },
+    "answer": "We have leap years because the Earth's orbit around the Sun takes about 365 and a quarter days. To keep our calendar accurate, we add an extra day every four years.",
+    "steps": "Here's why we have leap years:\n*   The Earth goes around the Sun.\n*   This trip takes about 365 and a quarter days.\n*   To make up for the extra quarter day each year, we add a whole day every four years. This is called a leap year.",
+    "studentType": "vision",
+    "tips": "Think of it like this: each year, we're a little bit short of a full trip around the sun. After four years, those little bits add up to a whole day, so we add it back in!"
+}
+
+Name: Subjects
+GET http://127.0.0.1:5000/api/subjects?school=DemoSchool&class=10
+Bearer Token
+Access Token :
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODY1Mjk3MSwianRpIjoiYWU2ZDhlNTEtYjc5MC00MDljLTllYWUtNWQzZDFjNGU2NWU4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlYWNoZXJAZXhhbXBsZS5jb20iLCJuYmYiOjE3NTg2NTI5NzEsImNzcmYiOiJjMDExNzI0My0zYmMwLTRjNjUtOWI3Ny01ZGFkMmU0Zjg2MWMiLCJleHAiOjE3NTg2OTYxNzEsInJvbGUiOiJ0ZWFjaGVyIiwic2Nob29sIjoiRGVtb1NjaG9vbCJ9.eEz3oeMgYdaBtQD1xhlsYyMS2s8h_jeAYsB0g0gElfA"
+REPLY JSON:
+{
+    "items": [
+        {
+            "subjectName": "english"
+        },
+        {
+            "subjectName": "science"
+        },
+        {
+            "subjectName": "social"
+        }
+    ]
+}
+
+for /teacher/upload
+for audio: audio
+for file: file
+for text: text in the teacher upload

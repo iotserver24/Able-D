@@ -28,20 +28,18 @@ def student_register():
     student_type = (data.get("studentType") or "").strip().lower()
     name = (data.get("name") or None)
     class_name = (data.get("class") or data.get("className") or None)
-    subject = (data.get("subject") or None)
-    school = (data.get("school") or None)
     email = (data.get("email") or "").strip()
     password = (data.get("password") or "")
+    
+    # Hardcoded values
+    school = "DemoSchool"  # Hardcoded school/college
+    subject = "science"    # Hardcoded subject (one of: english, science, social)
     
     # Validation
     if not name or not name.strip():
         return jsonify({"error": "Name is required"}), 400
     if not class_name or not class_name.strip():
         return jsonify({"error": "Class is required"}), 400
-    if not subject or not subject.strip():
-        return jsonify({"error": "Subject is required"}), 400
-    if not school or not school.strip():
-        return jsonify({"error": "School is required"}), 400
     if not email:
         return jsonify({"error": "Email is required"}), 400
     if len(password) < 6:
@@ -101,9 +99,11 @@ def student_login():
 def teacher_register():
     data = request.get_json(force=True) or {}
     name = (data.get("name") or "").strip()
-    school = (data.get("school") or None)
     email = (data.get("email") or "").strip()
     password = (data.get("password") or "")
+    
+    # Hardcoded values
+    school = "DemoSchool"  # Hardcoded school/college
     
     # Validation
     if not name:

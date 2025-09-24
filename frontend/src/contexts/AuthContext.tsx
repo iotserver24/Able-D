@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { buildApiUrl, API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 export interface User {
   id: string;
@@ -11,6 +12,7 @@ export interface User {
   studentType?: string;
   class?: string;
   subject?: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -27,15 +29,11 @@ interface RegisterData {
   email: string;
   password: string;
   role: 'student' | 'teacher';
-  school: string;
   studentType?: string;
   class?: string;
-  subject?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_BASE_URL = 'https://back.hcknroll.megavault.pw';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -67,14 +65,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       
       const endpoint = role === 'student' 
-        ? `${API_BASE_URL}/api/auth/student/login`
-        : `${API_BASE_URL}/api/auth/teacher/login`;
+        ? buildApiUrl(API_ENDPOINTS.AUTH.STUDENT_LOGIN)
+        : buildApiUrl(API_ENDPOINTS.AUTH.TEACHER_LOGIN);
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email, password }),
       });
 
@@ -88,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData: User = {
         ...data.user,
         role,
+        token: data.accessToken,
       };
 
       setUser(userData);
@@ -100,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Navigate to appropriate dashboard
-      navigate(role === 'student' ? '/student/dashboard' : '/teacher/dashboard');
+      navigate(role === 'student' ? '/student-dashboard' : '/teacher-dashboard');
       
     } catch (error) {
       console.error('Login error:', error);
@@ -120,14 +117,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       
       const endpoint = userData.role === 'student' 
-        ? `${API_BASE_URL}/api/auth/student/register`
-        : `${API_BASE_URL}/api/auth/teacher/register`;
+        ? buildApiUrl(API_ENDPOINTS.AUTH.STUDENT_REGISTER)
+        : buildApiUrl(API_ENDPOINTS.AUTH.TEACHER_REGISTER);
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       });
 
@@ -141,6 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user: User = {
         ...data.user,
         role: userData.role,
+        token: data.accessToken,
       };
 
       setUser(user);
@@ -153,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Navigate to appropriate dashboard
-      navigate(userData.role === 'student' ? '/student/dashboard' : '/teacher/dashboard');
+      navigate(userData.role === 'student' ? '/student-dashboard' : '/teacher-dashboard');
       
     } catch (error) {
       console.error('Registration error:', error);

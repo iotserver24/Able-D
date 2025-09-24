@@ -75,7 +75,7 @@ def create_or_login_student(
     return user_doc
 
 
-def register_teacher(name: str, email: str, password: str, school: Optional[str] = None) -> dict:
+def register_teacher(name: str, email: str, password: str, school: str = "DemoSchool") -> dict:
     email_n = normalize_email(email)
     if not is_valid_email(email_n):
         raise ValueError("Invalid email")
@@ -89,7 +89,7 @@ def register_teacher(name: str, email: str, password: str, school: Optional[str]
         "role": "teacher",
         "name": name.strip(),
         "email": email_n,
-        "school": (school or None),
+        "school": school,
         "passwordHash": password_hash,
         "createdAt": _now_iso(),
         "updatedAt": _now_iso(),
@@ -124,9 +124,9 @@ def register_student(
     name: str,
     class_name: str,
     subject: str,
-    school: str,
-    email: str,
-    password: str,
+    school: str = "DemoSchool",
+    email: str = "",
+    password: str = "",
 ) -> dict:
     """Register a new student with email and password"""
     email_n = normalize_email(email)
