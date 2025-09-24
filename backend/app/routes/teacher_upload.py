@@ -83,13 +83,26 @@ def teacher_upload():
                 original_filename = audio.filename if audio else None
                 tmp_path = Path(tmpdir) / (audio.filename if audio else "audio")
                 audio.save(str(tmp_path))
-                path_to_use, _ = ensure_wav_pcm16_mono_16k(tmp_path)
-                stt_client = get_stt_client(language=(request.form.get("language") or "en-US"))
-                success, result = stt_client.transcribe(str(path_to_use))
-                if not success:
-                    return jsonify({"error": result}), 400
-                text = result
-                source_type = "audio"
+                
+                # Convert audio to Azure-compatible format
+                path_to_use, is_temp = ensure_wav_pcm16_mono_16k(tmp_path)
+                
+                try:
+                    stt_client = get_stt_client(language=(request.form.get("language") or "en-US"))
+                    success, result = stt_client.transcribe(str(path_to_use))
+                    if not success:
+                        return jsonify({"error": f"STT Error: {result}"}), 400
+                    text = result
+                    source_type = "audio"
+                except (RuntimeError, ValueError, OSError) as e:
+                    return jsonify({"error": f"STT Error: {str(e)}"}), 400
+                finally:
+                    # Clean up temporary converted file if it was created
+                    if is_temp and path_to_use.exists():
+                        try:
+                            path_to_use.unlink()
+                        except OSError:
+                            pass
 
     # Post-processing: generate dyslexie variant, synthesize TTS, and upload MP3 to Catbox
     variants = {}

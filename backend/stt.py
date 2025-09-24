@@ -59,6 +59,13 @@ class SimpleMicrosoftSTT:
             return False, f"Unsupported format: {audio_path.suffix}"
         
         try:
+            # Validate audio file before processing
+            if not audio_path.exists():
+                return False, f"Audio file not found: {audio_file}"
+            
+            if audio_path.stat().st_size == 0:
+                return False, "Audio file is empty"
+            
             # Setup audio input
             audio_config = speechsdk.audio.AudioConfig(filename=audio_file)
             recognizer = speechsdk.SpeechRecognizer(
@@ -115,7 +122,16 @@ class SimpleMicrosoftSTT:
             return True, transcription
             
         except Exception as e:
-            return False, f"Error: {str(e)}"
+            error_msg = str(e)
+            # Provide more specific error messages for common Azure Speech SDK errors
+            if "SPXERR_INVALID_HEADER" in error_msg:
+                return False, f"Invalid audio file format. Please ensure the audio file is not corrupted and is in a supported format (WAV, MP3, M4A, etc.)"
+            elif "SPXERR_AUDIO_SYS_LIBRARY_NOT_FOUND" in error_msg:
+                return False, f"Audio system library not found. Please check your system audio configuration."
+            elif "SPXERR_AUDIO_DEVICE_LOST" in error_msg:
+                return False, f"Audio device connection lost. Please try again."
+            else:
+                return False, f"STT Error: {error_msg}"
 
 
 def main():
