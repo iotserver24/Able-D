@@ -47,6 +47,7 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
   const [selectedTopicForDialog, setSelectedTopicForDialog] = useState<{ topic: string; school: string; class: string; subject: string } | null>(null);
   const [audioPermission, setAudioPermission] = useState(false);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Text-to-Speech functionality
@@ -78,6 +79,28 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
     speak(`Loading topic: ${topic.topic}`);
     onTopicSelect(topic.topic);
     setShowTopicDialog(false);
+  };
+
+  // Handle audio button clicks with proper single/double click detection
+  const handleAudioButtonClick = () => {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastClickTime;
+    
+    if (timeDiff < 300 && timeDiff > 0) { // Double click detected (within 300ms)
+      setShowTopicDialog(false);
+      stopSpeaking();
+      speak("Dialog closed");
+    } else { // Single click
+      if (isPlaying) {
+        onPauseAudio();
+        speak("Audio paused. Double tap quickly to close.");
+      } else {
+        onPlayAudio();
+        speak("Playing audio content. Double tap quickly to close.");
+      }
+    }
+    
+    setLastClickTime(currentTime);
   };
 
   // Handle mic button interaction
@@ -129,7 +152,7 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
   }, [topics]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-orange-300 to-red-400 p-4">
       {/* Header */}
       <div className="text-center mb-8 relative">
         {/* Logout Button */}
@@ -140,17 +163,17 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
               speak("Logging out. Goodbye!");
               setTimeout(() => onLogout(), 2000);
             }}
-            className="w-20 h-20 bg-red-500 hover:bg-red-600 border-4 border-red-700 rounded-full shadow-lg"
+            className="w-24 h-24 bg-red-600 hover:bg-red-700 border-6 border-red-800 rounded-full shadow-2xl"
             aria-label="Logout"
           >
-            <LogOut className="w-8 h-8 text-white" />
+            <LogOut className="w-10 h-10 text-white" />
           </Button>
         </div>
         
-        <h1 className="text-6xl font-black text-white mb-4 drop-shadow-lg">
+        <h1 className="text-8xl font-black text-white mb-6 drop-shadow-2xl">
           🎵 AUDIO LEARNING
         </h1>
-        <p className="text-3xl font-bold text-white drop-shadow">
+        <p className="text-4xl font-bold text-white drop-shadow-lg">
           Touch to Listen • Double Tap to Select
         </p>
       </div>
@@ -159,12 +182,12 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
       <div className="max-w-4xl mx-auto space-y-8">
         
         {/* Subject Selection */}
-        <Card className="bg-white border-4 border-yellow-600 shadow-2xl">
-          <CardContent className="p-8">
-            <h2 className="text-4xl font-bold text-yellow-800 mb-6 text-center">
+        <Card className="bg-white border-8 border-yellow-600 shadow-2xl">
+          <CardContent className="p-12">
+            <h2 className="text-6xl font-bold text-yellow-800 mb-8 text-center">
               📚 SUBJECTS
             </h2>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-8">
               {subjects.map((subject) => (
                 <Button
                   key={subject.subjectName}
@@ -173,10 +196,10 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
                     speak(`Selected subject: ${subject.subjectName}. Loading topics...`);
                     onSubjectSelect(subject.subjectName);
                   }}
-                  className={`h-24 text-2xl font-bold border-4 ${
+                  className={`h-32 text-3xl font-bold border-8 ${
                     selectedSubject === subject.subjectName
-                      ? 'bg-yellow-500 text-black border-yellow-700'
-                      : 'bg-blue-500 text-white border-blue-700 hover:bg-blue-600'
+                      ? 'bg-yellow-400 text-black border-yellow-600 shadow-lg'
+                      : 'bg-blue-600 text-white border-blue-800 hover:bg-blue-700'
                   }`}
                 >
                   {subject.subjectName.toUpperCase()}
@@ -187,18 +210,18 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
         </Card>
 
         {/* Topics */}
-        <Card className="bg-white border-4 border-green-600 shadow-2xl">
-          <CardContent className="p-8">
-            <h2 className="text-4xl font-bold text-green-800 mb-6 text-center">
+        <Card className="bg-white border-8 border-green-600 shadow-2xl">
+          <CardContent className="p-12">
+            <h2 className="text-6xl font-bold text-green-800 mb-8 text-center">
               📖 TOPICS
             </h2>
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {topics.map((topic) => (
                 <Button
                   key={topic.topic}
                   onClick={() => handleTopicClick(topic)}
                   onDoubleClick={() => handleTopicDoubleClick(topic)}
-                  className="h-20 text-2xl font-bold bg-green-500 text-white border-4 border-green-700 hover:bg-green-600"
+                  className="h-24 text-2xl font-bold bg-green-600 text-white border-8 border-green-800 hover:bg-green-700"
                 >
                   {topic.topic.toUpperCase()}
                 </Button>
@@ -207,53 +230,24 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
           </CardContent>
         </Card>
 
-        {/* Audio Controls */}
-        <Card className={`bg-white border-4 shadow-2xl ${isPlaying ? 'border-green-600 bg-green-50' : 'border-purple-600'}`}>
-          <CardContent className="p-8 text-center">
-            <h2 className={`text-4xl font-bold mb-6 ${isPlaying ? 'text-green-800' : 'text-purple-800'}`}>
-              {isPlaying ? '🔊 AUDIO PLAYING' : '🎤 AUDIO CONTROLS'}
-            </h2>
-            <div className="flex justify-center space-x-8">
-              <Button
-                onClick={handleMicClick}
-                onDoubleClick={handleMicDoubleClick}
-                className={`w-32 h-32 border-4 rounded-full ${isPlaying ? 'bg-green-500 hover:bg-green-600 border-green-700' : 'bg-purple-500 hover:bg-purple-600 border-purple-700'}`}
-              >
-                {isPlaying ? (
-                  <Pause className="w-16 h-16 text-white" />
-                ) : (
-                  <Mic className="w-16 h-16 text-white" />
-                )}
-              </Button>
-            </div>
-            <p className={`text-2xl font-bold mt-4 ${isPlaying ? 'text-green-800' : 'text-purple-800'}`}>
-              {isPlaying ? 'TAP: Pause • DOUBLE TAP: Stop & Show Topics' : 'TAP: Play/Pause • DOUBLE TAP: Stop & Show Topics'}
-            </p>
-            {currentNote?.audioUrl && (
-              <p className="text-lg font-medium text-gray-600 mt-2">
-                Audio Available: {currentNote.audioUrl ? '✅' : '❌'}
-              </p>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Current Content Info */}
         {currentNote && (
-          <Card className="bg-white border-4 border-orange-600 shadow-2xl">
-            <CardContent className="p-8">
-              <h2 className="text-4xl font-bold text-orange-800 mb-4 text-center">
+          <Card className="bg-white border-8 border-orange-600 shadow-2xl">
+            <CardContent className="p-12">
+              <h2 className="text-6xl font-bold text-orange-800 mb-8 text-center">
                 📝 CURRENT CONTENT
               </h2>
-              <p className="text-3xl font-bold text-orange-800 text-center">
+              <p className="text-4xl font-bold text-orange-800 text-center mb-6">
                 {selectedTopic.toUpperCase()}
               </p>
-              <div className="mt-6 text-center">
+              <div className="mt-8 text-center">
                 <Button
                   onClick={() => {
                     stopSpeaking();
                     speak("Content ready for audio playback");
                   }}
-                  className="h-16 text-xl font-bold bg-orange-500 text-white border-4 border-orange-700 hover:bg-orange-600"
+                  className="h-20 text-2xl font-bold bg-orange-500 text-white border-8 border-orange-700 hover:bg-orange-600"
                 >
                   🔊 READY TO PLAY
                 </Button>
@@ -263,34 +257,72 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
         )}
       </div>
 
-      {/* Topic Dialog */}
-      <Dialog open={showTopicDialog} onOpenChange={setShowTopicDialog}>
-        <DialogContent className="max-w-2xl bg-yellow-100 border-4 border-yellow-600">
+      {/* Topic Dialog with Audio Controls */}
+      <Dialog open={showTopicDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowTopicDialog(false);
+          stopSpeaking();
+          speak("Dialog closed");
+        }
+      }}>
+        <DialogContent className="max-w-5xl bg-gradient-to-br from-blue-50 to-purple-50 border-8 border-blue-600">
           <DialogHeader>
-            <DialogTitle className="text-4xl font-bold text-yellow-800 text-center">
-              📖 TOPIC PREVIEW
+            <DialogTitle className="text-6xl font-bold text-blue-800 text-center">
+              📚 TOPIC: {selectedTopicForDialog?.topic?.toUpperCase()}
             </DialogTitle>
           </DialogHeader>
           {selectedTopicForDialog && (
-            <div className="p-8 text-center space-y-6">
-              <h3 className="text-5xl font-bold text-yellow-800">
-                {selectedTopicForDialog.topic.toUpperCase()}
-              </h3>
-              <div className="space-y-4">
-                <Button
-                  onClick={() => handleTopicDoubleClick(selectedTopicForDialog)}
-                  className="w-full h-20 text-3xl font-bold bg-green-500 text-white border-4 border-green-700 hover:bg-green-600"
-                >
-                  🎵 LOAD & PLAY
-                </Button>
+            <div className="p-12 text-center space-y-8">
+              <div className="bg-white border-8 border-green-600 rounded-2xl p-8">
+                <h3 className="text-4xl font-bold text-green-800 mb-8">
+                  🎵 AUDIO CONTROLS
+                </h3>
+                
+                {/* Large Audio Control Button */}
+                <div className="flex justify-center mb-8">
+                  <Button
+                    onClick={handleAudioButtonClick}
+                    className={`w-48 h-48 border-8 rounded-full shadow-2xl ${
+                      isPlaying 
+                        ? 'bg-red-600 hover:bg-red-700 border-red-800' 
+                        : 'bg-green-600 hover:bg-green-700 border-green-800'
+                    }`}
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-24 h-24 text-white" />
+                    ) : (
+                      <Play className="w-24 h-24 text-white" />
+                    )}
+                  </Button>
+                </div>
+                
+                <p className={`text-3xl font-bold ${
+                  isPlaying ? 'text-green-800' : 'text-blue-800'
+                }`}>
+                  {isPlaying ? '🔊 AUDIO PLAYING' : '🎵 TAP TO PLAY AUDIO'}
+                </p>
+                
+                <p className="text-2xl text-gray-700 mt-4">
+                  Single tap: Play/Pause • Quick double tap: Close dialog
+                </p>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-center space-x-8">
                 <Button
                   onClick={() => {
                     setShowTopicDialog(false);
-                    stopSpeaking();
+                    speak("Dialog closed");
                   }}
-                  className="w-full h-16 text-2xl font-bold bg-red-500 text-white border-4 border-red-700 hover:bg-red-600"
+                  className="w-40 h-20 text-2xl font-bold bg-gray-600 hover:bg-gray-700 border-4 border-gray-800"
                 >
-                  ❌ CANCEL
+                  CLOSE
+                </Button>
+                <Button
+                  onClick={() => handleTopicDoubleClick(selectedTopicForDialog)}
+                  className="w-40 h-20 text-2xl font-bold bg-blue-600 hover:bg-blue-700 border-4 border-blue-800"
+                >
+                  LOAD TOPIC
                 </Button>
               </div>
             </div>
@@ -300,20 +332,20 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
 
       {/* Permission Dialog */}
       <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
-        <DialogContent className="max-w-xl bg-blue-100 border-4 border-blue-600">
+        <DialogContent className="max-w-2xl bg-blue-100 border-8 border-blue-600">
           <DialogHeader>
-            <DialogTitle className="text-4xl font-bold text-blue-800 text-center">
+            <DialogTitle className="text-6xl font-bold text-blue-800 text-center">
               🎤 AUDIO PERMISSION
             </DialogTitle>
           </DialogHeader>
-          <div className="p-8 text-center space-y-6">
-            <p className="text-3xl font-bold text-blue-800">
+          <div className="p-12 text-center space-y-8">
+            <p className="text-4xl font-bold text-blue-800">
               Enable audio features for better learning experience?
             </p>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Button
                 onClick={handlePermissionConfirm}
-                className="w-full h-20 text-3xl font-bold bg-green-500 text-white border-4 border-green-700 hover:bg-green-600"
+                className="w-full h-24 text-4xl font-bold bg-green-500 text-white border-8 border-green-700 hover:bg-green-600"
               >
                 ✅ YES, ENABLE
               </Button>
@@ -322,7 +354,7 @@ const VisuallyImpairedInterface: React.FC<VisuallyImpairedInterfaceProps> = ({
                   setShowPermissionDialog(false);
                   speak("Audio features disabled");
                 }}
-                className="w-full h-16 text-2xl font-bold bg-red-500 text-white border-4 border-red-700 hover:bg-red-600"
+                className="w-full h-20 text-3xl font-bold bg-red-500 text-white border-8 border-red-700 hover:bg-red-600"
               >
                 ❌ NO, THANKS
               </Button>
