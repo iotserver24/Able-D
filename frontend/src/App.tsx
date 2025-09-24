@@ -20,7 +20,6 @@ import NotFound from "./pages/NotFound";
 
 // TTS Components
 import TTSWelcomePopup from "@/components/tts/TTSWelcomePopup";
-import TTSController from "@/components/tts/TTSController";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +38,6 @@ const App = () => (
               <Toaster />
               <Sonner />
               <TTSWelcomePopup />
-              <TTSController />
               
               <Routes>
                 {/* Public Routes */}

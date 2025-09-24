@@ -48,7 +48,8 @@ def student_register():
     try:
         user = register_student(student_type, name, class_name, subject, school, email, password)
         token = create_access_token(
-            identity={
+            identity=user.get("email"),  # Identity should be a string (email)
+            additional_claims={
                 "role": "student",
                 "studentType": user["studentType"],
                 "class": user.get("class"),
@@ -62,7 +63,7 @@ def student_register():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         # Ensure we never 500 due to DB connectivity; create ephemeral token instead
-        token = create_access_token(identity={"role": "student", "studentType": student_type})
+        token = create_access_token(identity=email, additional_claims={"role": "student", "studentType": student_type})
         return jsonify({"user": {"role": "student", "studentType": student_type}, "accessToken": token, "warning": "DB unavailable; ephemeral session issued"}), 200
 
 
@@ -81,7 +82,8 @@ def student_login():
             return jsonify({"error": "Invalid email or password"}), 401
         
         token = create_access_token(
-            identity={
+            identity=user.get("email"),  # Identity should be a string (email)
+            additional_claims={
                 "role": "student",
                 "studentType": user["studentType"],
                 "class": user.get("class"),

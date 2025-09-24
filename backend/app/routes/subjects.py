@@ -15,17 +15,21 @@ def list_subjects():
     _identity = get_jwt_identity()  # email string for teachers/students in new JWT format
     claims = get_jwt() or {}
     role = claims.get("role")
+    
+    # Debug logging
+    print(f"DEBUG - Identity: {_identity}")
+    print(f"DEBUG - Claims: {claims}")
+    print(f"DEBUG - Role: {role}")
+    print(f"DEBUG - Query params: {request.args}")
 
     # Only allow students and teachers; others forbidden
     if role not in {"student", "teacher"}:
         return jsonify({"error": "Forbidden"}), 403
 
     # Source of truth for school:
-    # - For students: school from JWT identity (set at login)
+    # - For students: school from JWT identity (set at login) or query param fallback
     # - For teachers: school should be part of JWT identity after login/register; if missing, allow query param fallback
-    school = claims.get("school")
-    if role == "teacher" and not school:
-        school = (request.args.get("school") or "").strip()
+    school = (request.args.get("school") or claims.get("school") or "").strip()
 
     # Class is provided as query param but not trusted for cross-school access.
     # Students may also have class in token; if not provided as query, fall back to token.

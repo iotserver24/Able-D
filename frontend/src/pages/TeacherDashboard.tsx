@@ -43,6 +43,7 @@ const TeacherDashboard = () => {
   });
 
   // Available subjects and classes
+  // All classes have the same 3 subjects
   const subjects = ['english', 'science', 'social'];
   const classes = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
@@ -139,6 +140,8 @@ const TeacherDashboard = () => {
         description: 'Educational content uploaded and processed successfully.',
       });
 
+      console.log('Upload response:', response);
+
       // Reset form
       setClassValue('');
       setSubject('');
@@ -147,7 +150,7 @@ const TeacherDashboard = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (audioInputRef.current) audioInputRef.current.value = '';
 
-    } catch (error: any) {
+    } catch (error:any) {
       console.error('Upload error:', error);
       setUploadProgress({
         isUploading: false,

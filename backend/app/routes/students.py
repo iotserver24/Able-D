@@ -31,7 +31,17 @@ def get_topics():
     if not school or not class_name or not subject:
         return jsonify({"error": "school, class, subject are required"}), 400
 
-    topics = list_topics(school=school, class_name=class_name, subject=subject)
+    topic_names = list_topics(school=school, class_name=class_name, subject=subject)
+    # Convert topic names to Topic objects expected by frontend
+    topics = [
+        {
+            "topic": topic_name,
+            "school": school,
+            "class": class_name,
+            "subject": subject
+        }
+        for topic_name in topic_names
+    ]
     return jsonify({"items": topics}), 200
 
 

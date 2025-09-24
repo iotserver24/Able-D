@@ -46,6 +46,38 @@ export interface QnAResponse {
   };
 }
 
+export interface Subject {
+  subjectName: string;
+}
+
+export interface SubjectsResponse {
+  items: Subject[];
+}
+
+/**
+ * Get available subjects for a specific class
+ */
+export const getSubjects = async (
+  school: string,
+  classValue: string,
+  token: string
+): Promise<SubjectsResponse> => {
+  // Include school as query parameter for fallback
+  const endpoint = `${API_ENDPOINTS.SUBJECTS}?school=${encodeURIComponent(school)}&class=${encodeURIComponent(classValue)}`;
+  
+  console.log('getSubjects called with:', {
+    school,
+    classValue,
+    endpoint,
+    tokenLength: token?.length,
+    tokenStart: token?.substring(0, 20) + '...'
+  });
+  
+  return authenticatedApiCall<SubjectsResponse>(endpoint, token, {
+    method: 'GET',
+  });
+};
+
 /**
  * Get topics for a specific subject
  */

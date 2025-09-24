@@ -165,9 +165,21 @@ ADAPTATION_GUIDELINES: Dict[str, str] = {
 
 def _normalize_student_type(student_type: str) -> str:
     st = (student_type or "").strip().lower()
-    # Accept common alias
-    if st == "dyslexia":
-        st = "dyslexie"
+    
+    # Map frontend student types to AI service expected types
+    type_mapping = {
+        "visually_impaired": "vision",
+        "hearing_impaired": "hearing", 
+        "speech_impaired": "speech",
+        "slow_learner": "dyslexie",  # Map slow learner to dyslexie for AI adaptation
+        "dyslexia": "dyslexie",
+        "dyslexie": "dyslexie"
+    }
+    
+    # Apply mapping if available
+    if st in type_mapping:
+        st = type_mapping[st]
+    
     return st
 
 
